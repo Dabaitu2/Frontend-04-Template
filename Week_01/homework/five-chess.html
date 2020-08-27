@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>婴幼儿五子棋</title>
+    <style>
+        h2 {
+            text-align: center;
+            font-family: Menlo, "Microsoft Sans Serif";
+        }
+        #board {
+            display: block;
+            width: fit-content;
+            margin: 100px auto;
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #ffe09c;
+            font-size: 40px;
+            line-height: 40px;
+            /* 行内盒布局默认为基线对齐 */
+            display: inline-block;
+            vertical-align: middle;
+            text-align: center;
+            background-color: #ffe09c;
+            background-image: linear-gradient(white 1px, transparent 0), linear-gradient(90deg, white 1px, transparent 0);
+            background-size: 200px 200px;
+            background-position: 20px 20px;
+        }
+
+        .black {
+            display: inline-block;
+            border-radius: 50%;
+            background: black;
+            height: 25px;
+            width: 25px;
+            box-shadow: 0 0 5px #515151;
+        }
+
+        .white {
+            display: inline-block;
+            border-radius: 50%;
+            height: 25px;
+            width: 25px;
+            background: white;
+            box-shadow: 0 0 5px #373737;
+        }
+    </style>
+</head>
+<body>
+<h2>婴幼儿五子棋- ai对战</h2>
+<div id="board"></div>
+<script>
+
+    let isFinished = false;
+    const boardWidth = 8;
+    const winNum = 5;
+    // 黑白子样式
+    const Black = `<span class="black">`;
+    const White = `<span class="white">`;
+
+    // 不一定齐全，五子棋棋型
+    const CHESSTYPE = {
+        linkFive: ['11111'],
+        liveFour: ['011110'],
+        rushFour: ['-11110', '11101', '11011', '01111-', '10111',],
+        liveThree: ['011100', '011010', '010110', '001110'],
+        sleepThree: ['10011-', '-11100', '-11010', '-10110', '01101-', '01011-', '00111-', '-11001', '10101'],
+        sleepTwo: ['-11000', '-01100', '00110-', '00011-'],
+        liveTwo: ['011000', '010100', '001100', '010010', '001010', '000110'],
+        liveOne: ['010000', '001000', '000100', '000010'],
+        sleepOne: ['-10000', '-01000', '00010-', '00001-']
+    }
+
+    // 初始化棋盘
+    let pattern = Array.from({length: boardWidth}).map(_ => Array.from({length: boardWidth}).fill(0));
+
+    // 黑子为2
+    let color = 2;
+    // 玩家方
+    let user = color;
+    // 电脑方
+    let computer = 3 - user;
+    // 先手方
+    let first = user;
+
+    // 最大搜索深度, 按道理来说，调整他能够使ai更强，但会出现长考。不过这个可能由于层数太低显得比单层搜索还要智障.. 需要配合AB剪枝
+    const maxDepth = 1;
+
+
+    // 极大极小值搜索算法
+    // 1. 首先将棋盘向下演化几步， 得到一颗博弈树
+    // 2. 从子节点开始，计算当时的得分，如果是对方下就计算当时最小得分，如果是我们下就计算最大得分
+
+
+    // 这个得分还是需要对五子棋比较了解才行，比如眠三冲四这些棋型的威胁程度
+    let SCORE = {
+        liveOne: 10,
+        sleepOne: 1,
+        liveTwo: 100,
+        sleepTwo: 5,
+        sleepThree: 90,
+        liveThree: 1000,
+        rushFour: 2000,
+        liveFour: 8000,
+        linkFive: 99999999,
+        inaccessible: -99999999
+    }
+
+    let SCORE_FOR_ENEMY = {
+        liveOne: -15,
+        sleepOne: -2,
+        liveTwo: -150,
+        sleepTwo: -10,
+        sleepThree: -100,
+        liveThree: -1500,
+        rushFour: -11000,
+        liveFour: -12000,
+        linkFive: -999999999,
+        inaccessible: 999999999
+    }
+
+    function show(callback) {
+        let board = document.getElementById('board');
+        board.innerHTML = '';
+        for (let i = 0; i < boardWidth; i++) {
+            for (let j = 0; j < boardWidth; j++) {
+                let cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.innerHTML = pattern[i][j] === 2 ? Black : pattern[i][j] === 1 ? White : "";
+                cell.addEventListener('click', () => userMove(j, i));
+                board.appendChild(cell);
+            }
+            board.appendChild(document.createElement('br'));
+        }
+        if (callback && !isFinished) {
+            setTimeout(callback, 0);
+        }
+    }
+
+    function userMove(x, y) {
+        if (pattern[y][x] === 0 && !isFinished) {
+            pattern[y][x] = color;
+            let impactedPattern = getImpactPattern(pattern, [x, y], winNum);
+            if (check(impactedPattern, color, winNum * 2 - 1)) {
+                alert((color === 2 ? '你' : "婴幼儿电脑") + '获胜!');
+                isFinished = true;
+            }
+            color = 3 - color;
+            show(computerMove);
+        }
+    }
+
+    function getImpactPattern(originPattern, centerPosition, winNum) {
+        const boardWidth = winNum * 2 - 1;
+        let xOffset = centerPosition[1] - (winNum - 1);
+        let yOffset = centerPosition[0] - (winNum - 1);
+        let newPattern = Array.from({length: boardWidth}).map(_ => Array.from({length: boardWidth}).fill(0));
+        for (let i = 0; i < boardWidth; i++) {
+            for (let j = 0; j < boardWidth; j++) {
+                newPattern[i][j] = originPattern[i + xOffset] ? originPattern[i + xOffset][j + yOffset] ? originPattern[i + xOffset][j + yOffset] : 0 : 0;
+            }
+        }
+        return newPattern;
+    }
+
+    function computerMove() {
+        if (!isFinished) {
+            console.log('开始思考...')
+            let choice = bestChoice(pattern, color, 1);
+            console.log('思考结束')
+            console.log(choice)
+            if (choice.point) {
+                pattern[choice.point[1]][choice.point[0]] = color;
+            }
+            let impactedPattern = getImpactPattern(pattern, choice.point, winNum);
+            if (check(impactedPattern, color, winNum * 2 - 1)) {
+                alert((color === 2 ? '你' : "婴幼儿电脑🤦‍♀️") + '获胜!');
+                isFinished = true;
+            }
+            color = 3 - color;
+            show();
+        }
+    }
+
+
+    // 只针对当前所落的子形成一个可能的评估范围，只在这个范围检查就可以了
+    // 因为其他范围是不会受到这个子落子的影响的
+    function check(pattern, color, boardWidth) {
+        {
+            for (let i = 0; i < boardWidth; i++) {
+                let win = false;
+                outer: for (let j = 0; j < boardWidth; j++) {
+                    if (!pattern[i] || pattern[i][j] !== color) {
+                        continue;
+                    }
+                    for (let k = 1; k < winNum; k++) {
+                        if (!pattern[i] || pattern[i][j + k] !== color) {
+                            j = j + k + 1;
+                            break;
+                        } else if (k === winNum - 1) {
+                            win = true;
+                            break outer;
+                        }
+                    }
+                }
+                if (win) {
+                    return true;
+                }
+            }
+        }
+        {
+            for (let i = 0; i < boardWidth; i++) {
+                let win = false;
+                outer: for (let j = 0; j < boardWidth; j++) {
+                    if (!pattern[j] || pattern[j][i] !== color) {
+                        continue;
+                    }
+                    for (let k = 1; k < winNum; k++) {
+                        if (!pattern[j + k] || pattern[(j + k)][i] !== color) {
+                            j = j + k + 1;
+                            break;
+                        } else if (k === winNum - 1) {
+                            win = true;
+                            break outer;
+                        }
+                    }
+                }
+                if (win) {
+                    return true;
+                }
+            }
+        }
+        {
+            let win = false;
+            outer: for (let i = 0; i < boardWidth; i++) {
+                if (!pattern[i] || pattern[i][i] !== color) {
+                    continue;
+                }
+                for (let j = 0; j < winNum; j++) {
+                    if (!pattern[i + j] || pattern[(i + j)][(i + j)] !== color) {
+                        i = i + j + 1;
+                        break;
+                    } else if (j === winNum - 1) {
+                        win = true;
+                        break outer;
+                    }
+                }
+            }
+            if (win) {
+                return true;
+            }
+        }
+        {
+            let win = false;
+            outer: for (let i = 0; i < boardWidth; i++) {
+                if (!pattern[i] || pattern[i][boardWidth - 1 - i] !== color) {
+                    continue;
+                }
+                for (let j = 0; j < winNum; j++) {
+                    if (!pattern[i + j] || pattern[(i + j)][boardWidth - 1 - i - j] !== color) {
+                        i = i + j + 1;
+                        break;
+                    } else if (j === winNum - 1) {
+                        win = true;
+                        break outer;
+                    }
+                }
+            }
+            if (win) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * 评估方法: 计算整个棋局的棋型得分总数，属于我们的棋型为正数，属于别人的棋型为负数，加和计算
+     * 我们并不是一层一层的算分的，实际上只有最后一层才有具体的评估标准，
+     * 实际上，我们穷举所有可能, 直接将棋局演化一定步数
+     * 比如每一步有2种可能，我们演化4步就是 2^4 = 16 种棋盘，每种棋盘还对应了唯一的落子顺序
+     * 对这16棋盘按照评估函数计算分数
+     * 如果我们是先手，则第四步是对手下，则我们计算出最低分，就是假设对手也会穷举，计算到这一步
+     * 对手根据当前棋盘情况，得出第三步的8种棋局下它各自会选择哪一步，这也就构成了第三步的得分
+     * 第三步由我们走，8种棋局 实际上由第二步的4种棋局演化而来，我们会选择这4种棋局中各自走哪一步，会获得4个棋局下的各自的最高分
+     * 这也就构成了第二步4种棋局的得分, 依次向上推，称为极大极小值算法。
+     */
+
+
+    /**
+     * 由于是人机对战，bestChoice 当然只有电脑才会调用，因此minmax一般搜索终止于偶数层
+     * @param pattern 当前棋盘
+     * @param color   当前颜色
+     * @param depth   当前深度
+     */
+    function bestChoice(pattern, color, depth) {
+        // 判断当前是用户还是电脑
+        let isUser = color === user;
+        // 基准情况，到达最大搜索深度，开始计算实际棋盘得分
+        // 对于对方来说，最坏的情况就是我们赢了, 对我们来说则是我们输
+        let best = {
+            point: null,
+            score: isUser ? SCORE.linkFive : SCORE.inaccessible
+        }
+        let scores = [];
+        // 最后一层，计算实际每个棋盘的得分
+        for (let i = 0; i < boardWidth; i++) {
+            for (let j = 0; j < boardWidth; j++) {
+                if (pattern[i][j] !== 0) {
+                    continue;
+                }
+                let temp = naiveClone(pattern);
+                temp[i][j] = color;
+                // 最后一层永远都是计算电脑的棋局得分就好了，只需要根据当前判断的是用户还是电脑，取min或max即可
+                if (depth === maxDepth) {
+                    let score = evaluate(temp, computer);
+                    let score_enemy = evaluateForEnemy(temp, user);
+                    scores.push({
+                        point: [j, i],
+                        score: score + score_enemy
+                    });
+                } else {
+                    // 其他情况，递归的去获得子博弈树传递上来的值
+                    scores.push({
+                        point: [j, i],
+                        score: bestChoice(temp, 3 - color, depth + 1).score
+                    });
+                }
+            }
+        }
+        if (isUser) {
+            scores.forEach(score => {
+                if (score.score < best.score) {
+                    best = score;
+                }
+            });
+        } else {
+            scores.forEach(score => {
+                if (score.score > best.score) {
+                    best = score;
+                }
+            });
+        }
+        return best;
+
+    }
+
+
+    /**
+     * 计算局势
+     * 这块图省事，直接写了两个几乎一样的函数，问题不大
+     * 这时的局势已经是我方落子后的情况
+     * 1, 检查我方棋型，结果为正数
+     * 2. 检查对方棋型，结果为负数，且同棋型对方的负数绝对值更大，但不大过我方更优棋型
+     * 比如 我方活四 大于 对方活三 大于 我方活三
+     * @param pattern
+     * @param color 作为正数方的颜色
+     * @return {boolean|number}
+     */
+    function evaluate(pattern, color) {
+        let chessTypeNum = {
+            liveTwo: 0,
+            liveOne: 0,
+            sleepOne: 0,
+            sleepTwo: 0,
+            sleepThree: 0,
+            liveThree: 0,
+            rushFour: 0,
+            liveFour: 0,
+            linkFive: 0,
+        };
+        // 横着检查
+        {
+            for (let i = 0; i < boardWidth; i++) {
+                let string = '-';
+                for (let j = 0; j < boardWidth; j++) {
+                    if (pattern[i][j] === 0) {
+                        string = string + '0';
+                    } else if (pattern[i][j] === color) {
+                        string = string + '1';
+                    } else {
+                        string = string + '-';
+                    }
+                }
+                string += '-';
+                for (const chess_type in CHESSTYPE) {
+                    for (const type of CHESSTYPE[chess_type]) {
+                        let result = string.match(type);
+                        if (result && result.length) {
+                            chessTypeNum[chess_type] += result.length;
+                            if (chess_type === 'linkFive') {
+                                return SCORE["linkFive"];
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+        // 竖着检查
+        {
+            for (let i = 0; i < boardWidth; i++) {
+                let string = '-';
+                for (let j = 0; j < boardWidth; j++) {
+                    if (pattern[j][i] === 0) {
+                        string = string + '0';
+                    } else if (pattern[j][i] === color) {
+                        string = string + '1';
+                    } else {
+                        string = string + '-';
+                    }
+                }
+                string += '-';
+                for (const chess_type in CHESSTYPE) {
+                    for (const type of CHESSTYPE[chess_type]) {
+                        let result = string.match(type);
+                        if (result && result.length) {
+                            chessTypeNum[chess_type] += result.length;
+                            if (chess_type === 'linkFive') {
+                                return SCORE['linkFive'];
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+        // 斜着检查
+        {
+            // 正斜线
+            for (let k = -boardWidth + 1; k < boardWidth; k++) {
+                for (let i = 0; i < boardWidth; i++) {
+                    let string = '-';
+                    for (let j = 0; j < boardWidth; j++) {
+                        if (!pattern[i + j + k] || pattern[i + j + k][i + j] === 3 - color) {
+                            string = string + '-';
+                        } else if (pattern[i + j + k][i + j] === 0) {
+                            string = string + '0';
+                        } else if (pattern[i + j + k][i + j] === color) {
+                            string = string + '1';
+                        }
+                    }
+                    string += '-';
+                    for (const chess_type in CHESSTYPE) {
+                        for (const type of CHESSTYPE[chess_type]) {
+                            let result = string.match(type);
+                            if (result && result.length) {
+                                chessTypeNum[chess_type] += result.length;
+                                if (chess_type === 'linkFive') {
+                                    return SCORE['linkFive'];
+
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            // 反斜线
+            for (let k = -boardWidth + 1; k < boardWidth; k++) {
+                for (let i = 0; i < boardWidth; i++) {
+                    let string = '-';
+                    for (let j = 0; j < boardWidth; j++) {
+                        if (!pattern[i + j + k] || pattern[i + j + k][boardWidth - 1 - i - j] === 3 - color) {
+                            string = string + '-';
+                        } else if (pattern[i + j + k][boardWidth - 1 - i - j] === 0) {
+                            string = string + '0';
+                        } else if (pattern[i + j + k][boardWidth - 1 - i - j] === color) {
+                            string = string + '1';
+                        }
+                    }
+                    string += '-';
+                    for (const chess_type in CHESSTYPE) {
+                        for (const type of CHESSTYPE[chess_type]) {
+                            let result = string.match(type);
+                            if (result && result.length) {
+                                chessTypeNum[chess_type] += result.length;
+                                if (chess_type === 'linkFive') {
+                                    return SCORE['linkFive'];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let result = 0;
+        Object.keys(chessTypeNum).forEach(chessType => {
+            result += (SCORE[chessType] * chessTypeNum[chessType]);
+        });
+        return result;
+    }
+
+    function evaluateForEnemy(pattern, color) {
+        let chessTypeNum = {
+            liveTwo: 0,
+            liveOne: 0,
+            sleepOne: 0,
+            sleepTwo: 0,
+            sleepThree: 0,
+            liveThree: 0,
+            rushFour: 0,
+            liveFour: 0,
+            linkFive: 0,
+        };
+        // 横着检查
+        {
+            for (let i = 0; i < boardWidth; i++) {
+                let string = '-';
+                for (let j = 0; j < boardWidth; j++) {
+                    if (pattern[i][j] === 0) {
+                        string = string + '0';
+                    } else if (pattern[i][j] === color) {
+                        string = string + '1';
+                    } else {
+                        string = string + '-';
+                    }
+                }
+                string += '-';
+                for (const chess_type in CHESSTYPE) {
+                    for (const type of CHESSTYPE[chess_type]) {
+                        let result = string.match(type);
+                        if (result && result.length) {
+                            chessTypeNum[chess_type] += result.length;
+                            if (chess_type === 'linkFive') {
+                                return SCORE_FOR_ENEMY["linkFive"];
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+        // 竖着检查
+        {
+            for (let i = 0; i < boardWidth; i++) {
+                let string = '-';
+                for (let j = 0; j < boardWidth; j++) {
+                    if (pattern[j][i] === 0) {
+                        string = string + '0';
+                    } else if (pattern[j][i] === color) {
+                        string = string + '1';
+                    } else {
+                        string = string + '-';
+                    }
+                }
+                string += '-';
+                for (const chess_type in CHESSTYPE) {
+                    for (const type of CHESSTYPE[chess_type]) {
+                        let result = string.match(type);
+                        if (result && result.length) {
+                            chessTypeNum[chess_type] += result.length;
+                            if (chess_type === 'linkFive') {
+                                return SCORE_FOR_ENEMY['linkFive'];
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+        // 斜着检查
+        {
+            // 正斜线
+            for (let k = -boardWidth + 1; k < boardWidth; k++) {
+                for (let i = 0; i < boardWidth; i++) {
+                    let string = '-';
+                    for (let j = 0; j < boardWidth; j++) {
+                        if (!pattern[i + j + k] || pattern[i + j + k][i + j] === 3 - color) {
+                            string = string + '-';
+                        } else if (pattern[i + j + k][i + j] === 0) {
+                            string = string + '0';
+                        } else if (pattern[i + j + k][i + j] === color) {
+                            string = string + '1';
+                        }
+                    }
+                    string += '-';
+                    for (const chess_type in CHESSTYPE) {
+                        for (const type of CHESSTYPE[chess_type]) {
+                            let result = string.match(type);
+                            if (result && result.length) {
+                                chessTypeNum[chess_type] += result.length;
+                                if (chess_type === 'linkFive') {
+                                    return SCORE_FOR_ENEMY['linkFive'];
+
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            // 反斜线
+            for (let k = -boardWidth + 1; k < boardWidth; k++) {
+                for (let i = 0; i < boardWidth; i++) {
+                    let string = '-';
+                    for (let j = 0; j < boardWidth; j++) {
+                        if (!pattern[i + j + k] || pattern[i + j + k][boardWidth - 1 - i - j] === 3 - color) {
+                            string = string + '-';
+                        } else if (pattern[i + j + k][boardWidth - 1 - i - j] === 0) {
+                            string = string + '0';
+                        } else if (pattern[i + j + k][boardWidth - 1 - i - j] === color) {
+                            string = string + '1';
+                        }
+                    }
+                    string += '-';
+                    for (const chess_type in CHESSTYPE) {
+                        for (const type of CHESSTYPE[chess_type]) {
+                            let result = string.match(type);
+                            if (result && result.length) {
+                                chessTypeNum[chess_type] += result.length;
+                                if (chess_type === 'linkFive') {
+                                    return SCORE_FOR_ENEMY['linkFive'];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let result = 0;
+        Object.keys(chessTypeNum).forEach(chessType => {
+            result += (SCORE_FOR_ENEMY[chessType] * chessTypeNum[chessType]);
+        });
+        return result;
+    }
+
+
+    function naiveClone(pattern) {
+        return JSON.parse(JSON.stringify(pattern));
+    }
+
+    show();
+
+</script>
+</body>
+</html>

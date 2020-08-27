@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>一维数组下的Tic-tac-toe</title>
+    <style>
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #6eff82;
+            font-size: 50px;
+            border: 1px solid white;
+            line-height: 100px;
+            /* 行内盒布局默认为基线对齐 */
+            display: inline-block;
+            vertical-align: middle;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div id="board"></div>
+<script>
+    let pattern = [
+        2, 0, 0,
+        0, 1, 0,
+        0, 0, 0
+    ];
+
+    let color = 1;
+    let RESULT = {
+        win: 1,
+        draw: 0,
+        lose: -1,
+        inaccessible: -2 // 由于落子最终推演的结果肯定要么输要么赢要么平, 因此inaccessible对应的是无字可落的情况
+    }
+
+    /**
+     * 通过使用let，创建了循环体内的块级作用域
+     * 使得内部的i, j 仅供内部使用，避免受到外界i, j 变化影响
+     * 如果使用的是var，需要在内层for循环加上 (function(i, j){...})(i, j) 单独创建一个函数作用域
+     */
+    function show() {
+        let board = document.getElementById('board');
+        board.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                let cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.innerText = pattern[i * 3 + j] === 2 ? "❌" : pattern[i * 3 + j] === 1 ? "⭕️" : "";
+                // i代表列，j代表行, 落子坐标为x, y 因此需要倒置一下传入
+                cell.addEventListener('click', () => move(j, i));
+                board.appendChild(cell);
+            }
+            board.appendChild(document.createElement('br'));
+        }
+    }
+
+    function move(x, y) {
+        // 在落子实现内部，x,y 坐标对应的数组坐标依然需要调换一下，因为先列后行
+        if (pattern[y * 3 + x] === 0) {
+            pattern[y * 3 + x] = color;
+            if (check(pattern, color)) {
+                alert((color === 2 ? "❌" : "⭕️") + 'is winner!');
+            }
+            // 通过可逆运算实现交替落子
+            // 计算willWin 肯定是对待落子方而言的
+            color = 3 - color;
+            if (willWin(pattern, color)) {
+                console.log((color === 2 ? "❌" : "⭕️") + 'will win!');
+            }
+            console.log(bestChoice(pattern, color));
+            show();
+        }
+    }
+
+    /**
+     * 判断胜利，双色均适用，每一步下完之后都会执行
+     * 胜利条件:
+     * 1. 同行三个
+     * 2. 同列三个
+     * 3. 两对角线三个
+     */
+    function check(pattern, color) {
+        // 检查同行，先行后列遍历
+        for (let i = 0; i < 3; i++) {
+            let win = true;
+            for (let j = 0; j < 3; j++) {
+                if (pattern[i * 3 + j] !== color) {
+                    win = false;
+                }
+            }
+            if (win) {
+                return true;
+            }
+        }
+        // 检查同列, 先列后行遍历
+        for (let i = 0; i < 3; i++) {
+            let win = true;
+            for (let j = 0; j < 3; j++) {
+                if (pattern[j * 3 + i] !== color) {
+                    win = false;
+                }
+            }
+            if (win) {
+                return true;
+            }
+        }
+        {
+            // 使用 {} 直接创建块级词法作用域
+            let win = true;
+            // 检查对角线
+            for (let i = 0; i < 3; i++) {
+                if (pattern[i * 3 + i] !== color) {
+                    win = false;
+                }
+            }
+            if (win) {
+                return true;
+            }
+        }
+        {
+            // 使用 {} 直接创建块级词法作用域
+            let win = true;
+            for (let i = 0; i < 3; i++) {
+                if (pattern[i * 3 + 2 - i] !== color) {
+                    win = false;
+                }
+            }
+            if (win) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function willWin(pattern, color) {
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                // 如果当前已经有子了, 就无法在这里预测落子
+                if (pattern[i * 3 + j]) {
+                    continue;
+                }
+                // 否则就克隆一个新棋盘，并尝试落子并检查是否会赢
+                let temp = naiveClone(pattern);
+                temp[i * 3 + j] = color;
+                if (check(temp, color)) {
+                    return [j, i];
+                }
+            }
+        }
+        // 如果任何一个空点落子都不会赢，则还没有出现胜利的情况
+        return null;
+    }
+
+    /**
+     * 找到最佳落子点
+     * 落子策略
+     * 1. 走了这个点能赢
+     * 2. 走了这个点不让对方赢
+     *    或者：我们该步（+1）最好结果是让对面下一步 （+2）落子造成的结果最差
+     */
+    function bestChoice(pattern, color) {
+        let p;
+        // 这个表达式产生的返回值实际上是willWin 赋值给p后p的值，只要这个值不为空，说明willWin
+        // 如果存在可以赢的点，直接返回结果和点即可。
+        if (p = willWin(pattern, color)) {
+            return {
+                point: p,
+                result: RESULT.win
+            }
+        }
+        // -2 的结果是不可能达到的，作为兜底值
+        let result = RESULT.inaccessible;
+        let point = null;
+        outer: for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (pattern[i * 3 + j]) {
+                    continue;
+                }
+                // 假设走当前这一步点，获得未来的棋盘状态
+                let tmp = naiveClone(pattern);
+                tmp[i * 3 + j] = color;
+                // 计算对方的最优选择，这一步会递归的算到棋局终结
+                let r = bestChoice(tmp, 3 - color).result;
+                // 满足条件： 我们的最好结果就是对面的最差结果。 对面输，我们就赢，对面赢，我们就输，对面平，我们也平，所以用相反数来表示当前计算的result
+                let potentialResultAtThisStep = -r;
+                // 对于第一次计算，即inaccessible
+                // 除非r也是inaccessible，也就是推演的上一步就是无字可落, 否则落在任何点都比不走好。
+                // 这一步类似于求max中的把第一个数设置为max，再逐步比对
+                if (potentialResultAtThisStep > result) {
+                    result = potentialResultAtThisStep;
+                    point = [j, i];
+                    if (result === 1) {
+                        break outer;
+                    }
+                }
+            }
+        }
+        return {
+            point,
+            // 只要推算到最开始就是无子可落，且一开始没赢，说明必然是平局了
+            result: point ? result : 0
+        }
+
+    }
+
+    // 对于一维数组，直接使用Object.create, 将原始数组作为原型，
+    // 如果修改了产生的新数组，会遮蔽原型上的数据，达到克隆的效果
+    // 如果访问没有被修改的值，会访问到原型链上的数据，节约内存开销。
+    function naiveClone(pattern) {
+        return Object.create(pattern);
+    }
+
+    show();
+
+</script>
+</body>
+</html>
