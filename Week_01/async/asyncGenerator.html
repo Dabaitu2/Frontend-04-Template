@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>asyncGenerator的小例子</title>
+</head>
+<body>
+<script>
+
+    function sleep(timeout) {
+        return new Promise(((resolve, reject) => {
+            setTimeout(resolve, timeout);
+        }))
+    }
+
+    // async 可以和 generator 共同使用
+    async function* counter() {
+        let i = 0;
+        while (true) {
+          await sleep(1000);
+          yield i++;
+        }
+    }
+
+    (async function (){
+        // 对于asyncGenerator, 可以使用for await of语法来异步获取generator的产生值
+        // 这样可以不阻塞主线程
+      for await (let v of counter()) {
+          console.log(v);
+      }
+    }())
+
+</script>
+</body>
+</html>
