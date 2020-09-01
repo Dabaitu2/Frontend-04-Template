@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>词法分析</title>
+</head>
+<body>
+<script>
+    // 依次匹配数字, 分隔空白, 换行符
+    let regexp = /([0-9\.]+)|([ \t]+)|([\r\n]+)|(\*)|(\/)|(\+)|(-)/g;
+    let dictionary = ["Number", "Whitespace", "LineTerminator", "*", "/", "+", "-"];
+
+    function* tokenize(source) {
+        let rst = null;
+        let lastIndex = 0;
+        while (true) {
+            // lastIndex 是正则表达式的一个可读可写的整型属性，用来指定下一次匹配的起始索引。
+            // 只有当正则表达式指定了 /g 有效
+            // 在这里，只用来读，目的是检查 匹配的字符串长度和 正则表达式前进的字符长度是否相等
+            // 若正则的前进长度更长，说明之前有没有匹配到的，即不支持的字符串，本身应该抛出异常，这里为了简单直接终止程序
+            lastIndex = regexp.lastIndex;
+            rst = regexp.exec(source);
+            if (!rst) {
+                break;
+            }
+            if (regexp.lastIndex - lastIndex > rst[0].length) {
+                break;
+            }
+            let token = {
+                type: null,
+                value: null
+            }
+            // exec 的 第一个参数 是 符合正则表达式的全字符串
+            // 之后的 才是捕获组中的内容
+            // 检查捕获组有没有捕获到内容
+            for (let i = 1; i < dictionary.length; i++) {
+                if (rst[i]) {
+                    token.type = dictionary[i - 1];
+                }
+            }
+            token.value = rst[0];
+            yield token;
+        }
+        yield {
+            type: "EOF"
+        }
+    }
+
+    for (let token of tokenize("1024 + 10 * 25")) {
+        console.log(token);
+    }
+</script>
+</body>
+</html>

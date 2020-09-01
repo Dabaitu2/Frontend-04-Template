@@ -65,18 +65,18 @@
         _update(pos, length) {
             let l_child = 2 * pos + 1;
             let r_child = 2 * pos + 2;
-            let max_value_pointer = pos;
-            if (l_child < this.size && this.compare(this.data[l_child], this.data[max_value_pointer]) < 0) {
-                max_value_pointer = l_child;
+            let min_value_pointer = pos;
+            if (l_child < this.size && this.compare(this.data[l_child], this.data[min_value_pointer]) < 0) {
+                min_value_pointer = l_child;
             }
-            if (r_child < this.size && this.compare(this.data[r_child], this.data[max_value_pointer]) < 0) {
-                max_value_pointer = r_child;
+            if (r_child < this.size && this.compare(this.data[r_child], this.data[min_value_pointer]) < 0) {
+                min_value_pointer = r_child;
             }
             // 如果和当前位置的不相等，就交换
-            if (max_value_pointer !== pos) {
-                Heap.swap(pos, max_value_pointer, this.data);
-                // 这里的max_value_pointer 已经不是三者中最大的了，这个应该是被替换过的根元素
-                this._update(max_value_pointer, length);
+            if (min_value_pointer !== pos) {
+                Heap.swap(pos, min_value_pointer, this.data);
+                // 这里的max_value_pointer 已经不是三者中最小的了，这个应该是被替换过的根元素
+                this._update(min_value_pointer, length);
             }
         }
 

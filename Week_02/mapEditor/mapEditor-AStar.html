@@ -195,16 +195,15 @@
             }
             // 将前一个点设置成当前点的pre
             table[transform2Dto1D(x, y, colsLen)] = pre;
-            // 如果没有计算过代价，则计算代价
-            // 已经被加入过open, 代价计算需要更新
-            await sleep(0);
-            container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'yellow';
-            calcCost([x, y]);
-            await sleep(0);
-            container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = '#c8c8c8';
-            // 如果已经计算过代价了，就不用再进堆了
+            // 如果在此之前没有计算过，先将其加入open
             if (!cost[transform2Dto1D(x, y, colsLen)]) {
+                // 计算代价
+                calcCost([x, y]);
+                // 将数据存入
                 open.give([x, y]);
+            } else {
+                // 如果已经计算过代价了，就不用再进堆了
+                calcCost([x, y]);
             }
         }
 
@@ -220,12 +219,12 @@
                     path.push(map[transform2Dto1D(x, y, colsLen)]);
                     // 回溯到上一个点
                     [x, y] = table[transform2Dto1D(x, y, colsLen)];
-                    await sleep(5);
+                    await sleep(0);
                     container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'purple';
                 }
                 return path;
             } else {
-                await sleep(5);
+                await sleep(0);
                 container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'lightgreen';
                 map[transform2Dto1D(x, y, colsLen)] = 2;
                 await checkNeighbours(x, y);
