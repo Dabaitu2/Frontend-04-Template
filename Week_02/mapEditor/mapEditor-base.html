@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>地图编辑器-part1</title>
+    <style>
+        .cell {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #c8c8c8;
+            border-bottom: 1px solid white;
+            border-right: 1px solid white;
+            vertical-align: top;
+            line-height: 7px;
+        }
+
+        #container {
+            width: 701px;
+            line-height: 0;
+        }
+
+        #info {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<div id="info">
+    <span>当前模式</span>
+</div>
+<button onclick="localStorage['map'] = JSON.stringify(map)">save</button>
+<button onclick="map = Array(colsLen * rowsLen).fill(0); drawMap();">clear</button>
+<button onclick="openClear()">clearMode</button>
+<button onclick="closeClear()">drawMode</button>
+<button onclick="findPathDemo()">findPath from 0, 0</button>
+<!--<script src="heap.js"></script>-->
+<script>
+    class Sorted {
+        constructor(data, compare) {
+            this.data = data.slice(0);
+            this.compare = compare || ((a, b) => a - b);
+        }
+        take() {
+            if(!this.data.length) {
+                // return null 也会错误参与比较，所以这里return undefined
+                return;
+            }
+
+            // 遍历数组取得最小值
+            let min = this.data[0];
+            let minIndex = 0;
+            for (let i = 1; i < this.data.length; i++) {
+                if (this.compare(this.data[i], min) < 0) {
+                    min = this.data[i];
+                    minIndex = i;
+                }
+            }
+
+            // 交换末尾元素与最小元素而不是使用slice，减少数组移动带来的开销
+            this.data[minIndex] = this.data[this.data.length - 1];
+            this.data.pop();
+            return min;
+        }
+
+        give(value) {
+            this.data.push(value);
+        }
+        get length() {
+            return this.data.length;
+        }
+    }
+
+    function transform2Dto1D(x, y, xsize) {
+        return y * xsize + x;
+    }
+    function sleep(timeout) {
+        return new Promise(resolve => {
+            setTimeout(resolve, timeout);
+        })
+    }
+
+    const rowsLen = 100;
+    const colsLen = 100;
+
+    let mousedown = false;
+    let clear = false;
+
+    let map = localStorage['map'] ? JSON.parse(localStorage['map']) : Array(colsLen * rowsLen).fill(0);
+    let container = document.getElementById('container');
+
+    function setClearMode(clearMode) {
+        clear = clearMode;
+        drawInfo();
+    }
+    function openClear() {
+        setClearMode(true);
+    }
+    function closeClear() {
+        setClearMode(false);
+    }
+    function drawMap() {
+        container.innerHTML = '';
+        for (let y = 0; y < rowsLen; y++) {
+            for (let x = 0; x < colsLen; x++) {
+                let cell = document.createElement('div');
+                cell.classList.add('cell');
+
+                if (map[transform2Dto1D(x, y, colsLen)] === 1) {
+                    cell.style.backgroundColor = 'black';
+                }
+
+                if (map[transform2Dto1D(x, y, colsLen)] === 2) {
+                    cell.style.backgroundColor = 'red';
+                }
+
+                cell.addEventListener('mousemove', () => {
+                    if (mousedown) {
+                        // 清除模式
+                        if (clear) {
+                            cell.style.backgroundColor = "";
+                            map[transform2Dto1D(x, y, colsLen)] = 0;
+                        } else {
+                            cell.style.backgroundColor = "black";
+                            map[transform2Dto1D(x, y, colsLen)] = 1;
+                        }
+                    }
+                });
+                container.appendChild(cell);
+            }
+        }
+    }
+    function drawInfo() {
+        let info = document.getElementById('info');
+        info.innerHTML = '';
+        let clearInfo = document.createElement('span');
+        clearInfo.innerText = '清除模式: ' + (!!clear ? "开启" : "关闭");
+        info.appendChild(clearInfo);
+    }
+
+    drawMap();
+    drawInfo();
+    document.addEventListener('mousedown', e => {
+        mousedown = true;
+        // 判断鼠标按下了哪一个键
+        // 0: 无
+        // 1: 左键
+        // 2: 中间滚轮（如果有的话）
+        // 3: 右键
+        // clear = (e.button === 3);
+    });
+    document.addEventListener('mouseup', () => mousedown = false);
+    // 阻止默认菜单事件
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+
+    /**
+     * 寻路算法, 广度优先算法 BFS
+     * 好处 -> 减小栈的深度
+     * @param map
+     * @param start
+     * @param end
+     */
+    async function findPath(map, start, end) {
+        // 利用原型链遮蔽修改，这个也类似于回溯操作
+        let table = Object.create(map);
+        // 队列将按照距离远近入队
+        let queue = new Sorted([start], (a, b) => distance(a) - distance(b));
+
+        // 只要不是边界条件，就把这个点放到队列里。
+        async function insert(x, y, pre) {
+            if (x < 0 || x >= colsLen || y < 0 || y >= rowsLen) {
+                return;
+            }
+            if (table[transform2Dto1D(x, y, colsLen)]) {
+                return;
+            }
+
+            await sleep(5);
+            container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'lightgreen';
+
+            map[transform2Dto1D(x, y, colsLen)] = 2;
+            // 将当前情况下的前一个点记录下来，因为pre是个对象，不为0也不为1，所以效果可以等同于把table的这个位置设置为2
+            // 同时，这个位置还隐含了上一个路径的信息。方便回溯
+            table[transform2Dto1D(x, y, colsLen)] = pre;
+            queue.give([x, y]);
+        }
+
+        // 广度优先的一个特点就是维护一个队列，包括webpack的buildGraph的过程都是类似的
+        while (queue.length) {
+            // 从队列中取出距离中心最近的，也就是直奔着中间前进
+            let [x, y] = queue.take();
+            // 当已经走到终点时，再用一个数组存储回溯的数据
+            if (x === end[0] && y === end[1]) {
+                let path = [];
+                // 除非走到起点，否则一直回溯
+                while (x !== start[0] || y !== start[1]) {
+                    // 找到的每一个点都加入路径集合
+                    path.push(map[transform2Dto1D(x, y, colsLen)]);
+                    // 回溯到上一个点
+                    [x, y] = table[transform2Dto1D(x, y, colsLen)];
+                    await sleep(10);
+                    container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'purple';
+                }
+                return path;
+            }
+            // 广度遍历上下左右四个点 + 斜方向四个点
+            // 这个地方其实切换顺序就会得到不同的路径，所以回溯不是一个唯一解，就是从一堆解里面按一个优先顺序找到其中某一条路径而已
+            await insert(x - 1, y, [x, y]);
+            await insert(x + 1, y, [x, y]);
+            await insert(x, y - 1, [x, y]);
+            await insert(x, y + 1, [x, y]);
+
+            await insert(x + 1, y + 1, [x, y]);
+            await insert(x + 1, y - 1, [x, y]);
+            await insert(x - 1, y + 1, [x, y]);
+            await insert(x - 1, y - 1, [x, y]);
+        }
+
+        // 求最短直线距离，由于这个只是用来比较远近的，没必要开方
+        function distance(point) {
+            return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+        }
+    }
+
+
+    function findPathDemo() {
+        findPath(map, [0, 0], [50, 50]);
+    }
+
+</script>
+</body>
+</html>

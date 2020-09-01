@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>地图编辑器-堆和最短路径优化</title>
+    <style>
+        .cell {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #c8c8c8;
+            border-bottom: 1px solid white;
+            border-right: 1px solid white;
+            vertical-align: top;
+            line-height: 7px;
+        }
+
+        #container {
+            width: 701px;
+            line-height: 0;
+        }
+
+        #info {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<div id="info">
+    <span>当前模式</span>
+</div>
+<button onclick="localStorage['map'] = JSON.stringify(map)">save</button>
+<button onclick="map = Array(colsLen * rowsLen).fill(0); drawMap();">clear</button>
+<button onclick="openClear()">clearMode</button>
+<button onclick="closeClear()">drawMode</button>
+<button onclick="findPathDemo()">findPath from 0, 0</button>
+<!--<script src="heap.js"></script>-->
+<script>
+    class Heap {
+        constructor(arr, compare) {
+            this.size = (arr || []).length;
+            this.data = arr.slice(0) || [];
+            this.compare = compare || ((a, b) => a - b);
+        }
+
+        give(value) {
+            this.data[this.size] = value;
+            let current = this.size;
+            let father = Math.max(Math.floor((current - 1) / 2), 0);
+            while (this.compare(this.data[current], this.data[father]) < 0) {
+                Heap.swap(current, father, this.data);
+                current = father;
+                father = Math.max(Math.floor((current - 1) / 2), 0);
+            }
+            this.size++;
+        }
+
+        static swap(a, b, array) {
+            const temp = array[b];
+            array[b] = array[a];
+            array[a] = temp;
+        }
+
+        _update(pos, length) {
+            let l_child = 2 * pos + 1;
+            let r_child = 2 * pos + 2;
+            let max_value_pointer = pos;
+            if (l_child < this.size && this.compare(this.data[l_child], this.data[max_value_pointer]) < 0) {
+                max_value_pointer = l_child;
+            }
+            if (r_child < this.size && this.compare(this.data[r_child], this.data[max_value_pointer]) < 0) {
+                max_value_pointer = r_child;
+            }
+            // 如果和当前位置的不相等，就交换
+            if (max_value_pointer !== pos) {
+                Heap.swap(pos, max_value_pointer, this.data);
+                // 这里的max_value_pointer 已经不是三者中最大的了，这个应该是被替换过的根元素
+                this._update(max_value_pointer, length);
+            }
+        }
+
+        take() {
+            Heap.swap(0, this.size - 1, this.data);
+            this.size--;
+            this._update(0, this.size);
+            return this.data.pop();
+        }
+
+        get length() {
+            return this.size;
+        }
+    }
+
+    function transform2Dto1D(x, y, xsize) {
+        return y * xsize + x;
+    }
+
+    function sleep(timeout) {
+        return new Promise(resolve => {
+            setTimeout(resolve, timeout);
+        })
+    }
+
+    const rowsLen = 100;
+    const colsLen = 100;
+
+    let mousedown = false;
+    let clear = false;
+
+    let map = localStorage['map'] ? JSON.parse(localStorage['map']) : Array(colsLen * rowsLen).fill(0);
+    let container = document.getElementById('container');
+
+    function setClearMode(clearMode) {
+        clear = clearMode;
+        drawInfo();
+    }
+
+    function openClear() {
+        setClearMode(true);
+    }
+
+    function closeClear() {
+        setClearMode(false);
+    }
+
+    function drawMap() {
+        container.innerHTML = '';
+        for (let y = 0; y < rowsLen; y++) {
+            for (let x = 0; x < colsLen; x++) {
+                let cell = document.createElement('div');
+                cell.classList.add('cell');
+
+                if (map[transform2Dto1D(x, y, colsLen)] === 1) {
+                    cell.style.backgroundColor = 'black';
+                }
+
+                if (map[transform2Dto1D(x, y, colsLen)] === 2) {
+                    cell.style.backgroundColor = 'red';
+                }
+
+                cell.addEventListener('mousemove', () => {
+                    if (mousedown) {
+                        // 清除模式
+                        if (clear) {
+                            cell.style.backgroundColor = "";
+                            map[transform2Dto1D(x, y, colsLen)] = 0;
+                        } else {
+                            cell.style.backgroundColor = "black";
+                            map[transform2Dto1D(x, y, colsLen)] = 1;
+                        }
+                    }
+                });
+                container.appendChild(cell);
+            }
+        }
+    }
+
+    function drawInfo() {
+        let info = document.getElementById('info');
+        info.innerHTML = '';
+        let clearInfo = document.createElement('span');
+        clearInfo.innerText = '清除模式: ' + (!!clear ? "开启" : "关闭");
+        info.appendChild(clearInfo);
+    }
+
+    drawMap();
+    drawInfo();
+    document.addEventListener('mousedown', e => {
+        mousedown = true;
+        // 判断鼠标按下了哪一个键
+        // 0: 无
+        // 1: 左键
+        // 2: 中间滚轮（如果有的话）
+        // 3: 右键
+        // clear = (e.button === 3);
+    });
+    document.addEventListener('mouseup', () => mousedown = false);
+    // 阻止默认菜单事件
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+
+    /**
+     * 寻路算法, 广度优先算法 BFS
+     * 好处 -> 减小栈的深度
+     * @param map
+     * @param start
+     * @param end
+     */
+    async function findPath(map, start, end) {
+        // 利用原型链遮蔽修改，这个也类似于回溯操作
+        let table = Object.create(map);
+        // 队列将按照距离远近入队
+        let queue = new Heap([start], (a, b) => distance(a) - distance(b));
+        // 构建开放列表，对每一个点都要检查其周边八个点哪个是最优解
+        // 启发式条件 离终点的距离(H) + 离起点的距离(G)最小(G+H=F)
+        let openList = new Heap([start], (a, b) => distanceToBoth(a) - distanceToBoth(b))
+
+        // 只要不是边界条件，就把这个点放到队列里。
+        async function insert(x, y, pre) {
+            if (x < 0 || x >= colsLen || y < 0 || y >= rowsLen) {
+                return;
+            }
+            if (table[transform2Dto1D(x, y, colsLen)]) {
+                return;
+            }
+            await sleep(5);
+            container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'lightgreen';
+
+            map[transform2Dto1D(x, y, colsLen)] = 2;
+            // 将当前情况下的前一个点记录下来，因为pre是个对象，不为0也不为1，所以效果可以等同于把table的这个位置设置为2
+            // 同时，这个位置还隐含了上一个路径的信息。方便回溯
+            table[transform2Dto1D(x, y, colsLen)] = pre;
+            queue.give([x, y]);
+
+        }
+
+        // 广度优先的一个特点就是维护一个队列，包括webpack的buildGraph的过程都是类似的
+        while (queue.length) {
+            // 从队列中取出距离中心最近的，也就是直奔着中间前进
+            let [x, y] = queue.take();
+            // 当已经走到终点时，再用一个数组存储回溯的数据
+            if (x === end[0] && y === end[1]) {
+                let path = [];
+                // 除非走到起点，否则一直回溯
+                while (x !== start[0] || y !== start[1]) {
+                    // 找到的每一个点都加入路径集合
+                    path.push(map[transform2Dto1D(x, y, colsLen)]);
+                    // 回溯到上一个点
+                    [x, y] = table[transform2Dto1D(x, y, colsLen)];
+                    await sleep(10);
+                    container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'purple';
+                }
+                return path;
+            }
+            await insert(x - 1, y, [x, y]);
+            await insert(x + 1, y, [x, y]);
+            await insert(x, y - 1, [x, y]);
+            await insert(x, y + 1, [x, y]);
+
+            await insert(x + 1, y + 1, [x, y]);
+            await insert(x + 1, y - 1, [x, y]);
+            await insert(x - 1, y + 1, [x, y]);
+            await insert(x - 1, y - 1, [x, y]);
+        }
+
+        // 求最短直线距离，由于这个只是用来比较远近的，没必要开方
+        function distance(point) {
+            return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+        }
+
+        function distanceToBoth(point) {
+            return (point[0] - start[0]) ** 2 + (point[1] - start[1]) ** 2 + distance(point);
+        }
+    }
+
+
+    function findPathDemo() {
+        findPath(map, [0, 0], [50, 50]);
+    }
+
+</script>
+</body>
+</html>
