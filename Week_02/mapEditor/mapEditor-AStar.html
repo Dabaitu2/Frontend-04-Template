@@ -209,12 +209,16 @@
 
         while (open.length) {
             // 取出最优的开放点
+            // 这么理解，凡是可以通达的点，我们都认为是可选的最优路径
+            // 但是每次要判断接下来往哪儿走的时候，我们使用F值最好的来试试
             let [x, y] = open.take();
             // 当已经走到终点时，再用一个数组存储回溯的数据
             if (x === end[0] && y === end[1]) {
+                let gscore = 0;
                 let path = [];
                 // 除非走到起点，否则一直回溯
                 while (x !== start[0] || y !== start[1]) {
+                    gscore += 1;
                     // 找到的每一个点都加入路径集合
                     path.push(map[transform2Dto1D(x, y, colsLen)]);
                     // 回溯到上一个点
@@ -222,6 +226,7 @@
                     await sleep(0);
                     container.children[transform2Dto1D(x, y, colsLen)].style.backgroundColor = 'purple';
                 }
+                console.log('score', gscore);
                 return path;
             } else {
                 await sleep(0);
@@ -255,15 +260,23 @@
         function calcCost(point) {
             let pre = table[transform2Dto1D(...point, colsLen)];
             if (pre) {
-                let G = cost[pre].G + (point[0] - pre[0]) ** 2 + (point[1] - pre[1]) ** 2;
-                let H = (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+                // let G = cost[pre].G +  (point[0] - pre[0]) ** 2 + (point[1] - pre[1]) ** 2;
+                // let H = (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+                // let F = G + H;
+
+                let G = cost[pre].G +  Math.sqrt((point[0] - pre[0]) ** 2 + (point[1] - pre[1]) ** 2);
+                let H = Math.sqrt((point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2);
                 let F = G + H;
                 cost[point] = {
                     G, H, F
                 };
             } else {
+                // let G = 0;
+                // let H = (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+                // let F = G + H;
+
                 let G = 0;
-                let H = (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+                let H = Math.sqrt((point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2);
                 let F = G + H;
                 cost[point] = {
                     G, H, F
