@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>KMP 模式匹配算法</title>
+    <style>
+        table {
+            border-spacing: 0;
+        }
+
+        td, th {
+            border: 1px solid;
+            padding: 4px 15px;
+        }
+    </style>
+</head>
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+
+
+
+
+
+
+
+</script>
+<script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<body>
+<h2>KMP 算法</h2>
+<hr>
+<p>kmp 全名 <b>Knuth-Morris-Pratt 算法</b>, 是用于求解模式串是否在源串中匹配的算法。相比于朴素的BF算法二重循环 $O(m \times n)$ 的复杂度，它不需要回溯主串，使得算法复杂度降低到了线性的
+    $O(m + n)$ 。</p>
+<h3> 一个迷幻的问题：为什么不需要回溯原始串了？</h3>
+<p>
+    <b>注：
+        以下所指 <br>
+        $T$ 为主串,<br>
+        $P$ 为模式串，<br>
+        $T_{i..j}$ 指主串的第 $i$ 个元素到第 $j$ 个元素形成的子串</b>
+</p>
+
+<p>BF 算法之所以慢，是慢在它的循环操作上，每一次失配都会使得主串回溯。而KMP算法的失配却不需要这么干了。如何理解KMP算法中的这个优化?</p>
+<ol>
+    <li> 应该这么理解。与其说不需要回溯主串是KMP带来的优化，不如说KMP的目标是干掉回溯主串这个操作。正是因为想要保证主串不再回溯，KMP才设计了next数组（fail数组）</li>
+    <li>实际上，主串不用回溯是可以证明的，假设我们在发生失配前已经匹配了$j$个字符。意味着模式串$P_1...j$ 和主串 $T_{l+1...l+j}$ 是匹配的。如果我们回溯到当前模式串起点对应的主串位置的下一位。也就是
+        $T_{l+2}$ 开始重新匹配。考虑如下情况<br>
+        <ul>
+            <li> 存在 $T_{l+2...l+j}$ 和 $P_{l...j-1}$ 匹配，则下一位匹配又将遇到 $T_{l+j+1}$ 和 $P_j$, 主串回到了回溯前的位置。</li>
+            <li> 如果不存在这样的匹配，那么按照BF算法，模式串首位前移，主串指针也前移到$T_{l+3}$，此时要判断的就是$T_{l+3...l+j}$ 和 $P_{l...j-2}$ 是否相等。其计算方法一样的
+            </li>
+            <li> 那么最终要么是找到这样的匹配，使得下一步还是进行到$T_{l+j+1}$，要么是一直都没找到，直到再次回到当前点。</li>
+        </ul>
+    </li>
+    <li>那么，既然可以干掉回溯，为什么BF算法却不行？问题出在模式串的匹配策略上，BF算法的失配，会让模式串直接退回第一个字符。而实际上，虽然前面描述的回溯判断会让主串$T$ 回溯操作最后回到$T_{l+j+1}$,
+        但和它进行一一比对的模式串已经不是$P_j$而是$P_{j-1}$或者$p_{j-2}...$了。而这些匹配实际是有可能成功的，漏掉这些计算肯定是不正确的。
+    </li>
+    <li>因此，KMP的关键在于，保持主串不回溯，只通过修改模式串的匹配检查来避免“漏掉”特定的计算。说的再详细一点，就是检查是否存在 $x < j$, 使得 $P_{1...j-x} = T_{l+j+1-x...l+j+1}$,
+        且这个$x$ 应该越大越好。如果不存在这个x，说明不存在漏掉的计算。主串可以放心的后移了。模式串也可以从最初字符开始。如果存在这个字符串，则继续比较当前主串位置和$P_{j-x+1}$, 相当于快速推进了逐项比对流程。
+    </li>
+</ol>
+<h3> So, KMP到底怎么算？</h3>
+<h4> 核心思路: 双指针 + $fail$ 数组 </h4>
+<p>双指针自然是一个 $match$ 指针指向模式串 $P$ (初始状态是指向-1)，一个i指针指向源串 $T$, 如果 $P_{match+1}$ 与 $T_i$ 匹配，就将模式串，源串指针后移, 即 $match + 1,
+    i+1$。若不匹配，先尝试移动模式串指针，查看之前有没有重复模式，这样直接从前一个重复模式处重移动。若已经到达 $match= -1$ 。就移动 $i$ 来寻找下一个匹配模式串首字母的位置。
+    $kmp$ 算法会预先处理模式串，求出一个 $fail$ 数组</p>
+
+<h4>基本解法</h4>
+<p>对于字符串 $S = S_0S_1...S_{n-1}$, 如果 $j$ 是满足 $S_{0...j}$ = $S_{i-j...i}$ 的最大值。则 $fail_i = j$ , 若不存在这样的 $j$, 则 $fail_i
+    =0$</p>
+
+证明可以直接跳转到$fail[match]$的过程如下
+已知 $$P_{0...fail[match]} = P_{match-fail[match]…match} $$
+又有 $$P_{0...match} = T_{i-match…i} => P_{match-fail[match]...match} = T_{i-fail[match]…i} $$
+可得 $$P_{0...fail[match]} = T_{i-fail[match]…i}$$
+从而得证
+
+说白了，就是检查模式串中是否有中间部分和开头有重复。如果有，如果在当前位置遭遇匹配失败，则可以将模式串的指针
+直接跳转到fail数组设定的位置。重新尝试匹配，而不用又从模式串的头头开始
+
+
+### 一个fail 数组实例
+<table>
+    <tr>
+        <th></th>
+        <th>a</th>
+        <th>a</th>
+        <th>b</th>
+        <th>a</th>
+        <th>b</th>
+        <th>a</th>
+        <th>a</th>
+        <th>b</th>
+    </tr>
+    <tr>
+        <td>$fail$</td>
+        <td>-1</td>
+        <td>0</td>
+        <td>-1</td>
+        <td>0</td>
+        <td>-1</td>
+        <td>0</td>
+        <td>1</td>
+        <td>2</td>
+    </tr>
+</table>
+<script>
+    // 使用二重循环
+    function getNext(pattern) {
+        // 计算next/fail数组, 其实等于模式串和自己匹配的过程，
+        // 将i设置为主串下标。match设置为模式串下标，其实都是一个串
+        // 举个例子
+        //         abcdabce
+        //          abcdabce    -> next[1] = 0
+        //           abcdabce   -> next[2] = 0
+        //            abcdabce  -> next[3] = 0
+        //             abcdabce -> next[4] = 1, next[5] = 2, next[6] = 3, next[7] = 0
+        let table = new Array(pattern.length).fill(0);
+        // 因为第一个字符肯定无任何匹配，故从第二个元素开始遍历
+        for (let i = 1, match = 0; i < table.length - 1; i++) {
+            // 遭遇失配之前，如果已经匹配了一些模式串,
+            // 这时将当前的模式串下标回退到next[match]，找到模式串的重复部分，重新尝试匹配
+            // 也就是大匹配挂了找里面的小部分能不能匹配。
+            // 这一步的证明过程已经写在上面了
+            // 如果判断还是失配，就继续循环，直到match到达首位（无任何匹配）或者出现匹配
+            while (match > 0 && pattern[match] !== pattern[i]) {
+                match = table[match];
+            }
+            // 如果当前的模式串和主串匹配，则将match+1，相当于模式串后移继续匹配
+            // 说明当前元素处在模式串中间
+            // 如果没有这一步，说明主串元素处在模式串开头
+            if (pattern[match] === pattern[i]) {
+                match += 1;
+            }
+            // 将当前的next数组设置为match值
+            table[i] = match;
+        }
+        return table;
+    }
+
+    // 使用双指针
+    function getNext2(pattern) {
+        let table = new Array(pattern.length).fill(0);
+        let i = 1, j = 0;
+        while (i < pattern.length) {
+            // 如果匹配，则各自自增
+            if (pattern[i] === pattern[j]) {
+                ++i;
+                ++j;
+                table[i] = j;
+            } else {
+                if (j > 0) {
+                    // j 还没找到开头，回退继续尝试
+                    j = table[j];
+                } else {
+                    // j 已经找到开头了，说明当前无匹配，主串自增,table[i] 无需赋值，为0
+                    ++i;
+                }
+            }
+        }
+        return table;
+    }
+
+    function kmp(source, pattern) {
+        if (pattern === '') {
+            return 0;
+        }
+        let table = getNext2(pattern);
+        let i = 0, j = 0;
+        while (i < source.length) {
+            if (source[i] === pattern[j]) {
+                i++;
+                j++;
+            } else {
+                if (j > 0) {
+                    j = table[j];
+                } else {
+                    i++;
+                }
+            }
+            if (j === pattern.length) {
+                return i - j;
+            }
+        }
+        return -1;
+    }
+
+    console.log(kmp("mississppi", 'pi'));
+</script>
+
+</body>
+</html>
