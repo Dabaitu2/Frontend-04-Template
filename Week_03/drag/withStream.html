@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Range API</title>
+</head>
+<body>
+<div id="container">文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字
+    <div id="draggable" style="display: inline-block; width: 100px; height: 100px; background-color: pink"></div>
+</div>
+
+<script>
+    let draggable = document.getElementById('draggable');
+    let baseX = 0, baseY = 0;
+
+    draggable.addEventListener('mousedown', function (event) {
+        let startX = event.clientX, startY = event.clientY;
+
+        let move = event => {
+            let range = getNearest(event.clientX, event.clientY);
+            range.insertNode(draggable);
+            // draggable.style.transform = `translate3d(${baseX + event.clientX - startX}px, ${baseY + event.clientY - startY}px, 0)`
+        }
+
+        let up = event => {
+            baseX = baseX + event.clientX - startX;
+            baseY = baseY + event.clientY - startY;
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', up);
+        };
+
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+    })
+
+    let ranges = [];
+    let container = document.getElementById('container');
+    // 文本节点为第一个childNodes
+    for (let i = 0; i < container.childNodes[0].length; i++) {
+        let range = document.createRange();
+        range.setStart(container.childNodes[0], i);
+        range.setEnd(container.childNodes[0], i);
+        ranges.push(range);
+    }
+
+    function getNearest(x, y) {
+        let min = Infinity;
+        let nearest = null;
+        for (let range of ranges) {
+            let rect = range.getBoundingClientRect();
+            let distance = (rect.x - x) ** 2 + (rect.y - y) ** 2;
+            if (distance < min) {
+                nearest = range;
+                min = distance;
+            }
+        }
+        return nearest;
+    }
+
+    document.addEventListener('selectstart', e => e.preventDefault());
+</script>
+</body>
+</html>

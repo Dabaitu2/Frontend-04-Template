@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>mock reactive</title>
+</head>
+<body>
+<input type="range" id="r" min="0" max="255" />
+<input type="range" id="g" min="0" max="255" />
+<input type="range" id="b" min="0" max="255" />
+<div id="color" style="width: 100px;height: 100px"></div>
+<script>
+    // 所有回调
+    let callbacks = new Map();
+    // 所有已定义的reactive 对象
+    let Reactivities = new Map();
+    // 使用到了哪些变量，这个相当于currentEffect，不过是数组
+    let usedReactivities = [];
+    let obj = {
+        r: 1,
+        g: 1,
+        b: 1
+    }
+
+    let po = reactive(obj);
+    // effect 的用法:
+    // 只要在effect中读取到了reactive对象属性，就可以监听其变化
+    // 首先注册一下回调，第一遍执行使得对应属性能被监听到
+    effect(() => {
+        document.getElementById('r').value = po.r;
+    })
+    effect(() => {
+        document.getElementById('g').value = po.g;
+    })
+    effect(() => {
+        document.getElementById('b').value = po.b;
+    })
+
+    // set 时就会触发回调，实现双向绑定
+    document.getElementById('r').addEventListener('input', e => po.r = e.target.value);
+    document.getElementById('g').addEventListener('input', e => po.g = e.target.value);
+    document.getElementById('b').addEventListener('input', e => po.b = e.target.value);
+
+    effect(() => {
+        document.getElementById('color').style.backgroundColor = `rgb(${po.r}, ${po.g}, ${po.b})`
+    })
+
+    function effect(callback) {
+        // 将usedReactivities 清空
+        usedReactivities = [];
+        // 执行effect的回调，如果这里面有get某些待监听变量的操作，就会推进usedReactivities，类似于标记currentEffect
+        callback();
+        // 检查有没有注册过回调，如果没有就新建相应的表
+        // 然后将回调推进执行回调列表中
+        // 注册好对应回调的步骤在effect中
+        for (const reactivity of usedReactivities) {
+            if (!callbacks.has(reactivity[0])) {
+                callbacks.set(reactivity[0], new Map());
+            }
+            if (!callbacks.get(reactivity[0]).has(reactivity[1])) {
+                callbacks.get(reactivity[0]).set(reactivity[1], []);
+            }
+            callbacks.get(reactivity[0]).get(reactivity[1]).push(callback);
+        }
+    }
+
+    function reactive(object) {
+        // 缓存
+        if (Reactivities.has(object)) {
+            return Reactivities.get(object);
+        }
+        let proxy = new Proxy(object, {
+            // set时触发相应回调
+            set(obj, p, value) {
+                obj[p] = value;
+                if (callbacks.has(obj)) {
+                    if (callbacks.get(obj).get(p)) {
+                        for (let callback of callbacks.get(obj).get(p)) {
+                            callback();
+                        }
+                    }
+                }
+                return obj[p]
+            },
+            // get 时将使用到的变量记录下来
+            get(obj, p) {
+                usedReactivities.push([obj, p]);
+                if (typeof obj[p] === 'object') {
+                    return reactive(obj[p]);
+                }
+                return obj[p];
+            }
+        });
+        Reactivities.set(object, proxy);
+        return proxy;
+    }
+</script>
+</body>
+</html>
