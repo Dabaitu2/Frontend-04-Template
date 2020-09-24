@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="container"></div>
+<script src="https://gw.alipayobjects.com/os/lib/antv/g6/3.7.1/dist/g6.min.js"></script>
+<script>
+    let set = new Set();
+    let objects = [
+        'eval',
+        'isFinite',
+        'isNaN',
+        'parseFloat',
+        'parseInt',
+        'decodeURI',
+        'decodeURIComponent',
+        'encodeURI',
+        'encodeURIComponent',
+        'Array',
+        'Date',
+        'RegExp',
+        'Promise',
+        'Proxy',
+        'Map',
+        'WeakMap',
+        'Set',
+        'WeakSet',
+        'Function',
+        'Boolean',
+        'String',
+        'Number',
+        'Symbol',
+        'Object',
+        'Error',
+        'EvalError',
+        'RangeError',
+        'ReferenceError',
+        'SyntaxError',
+        'TypeError',
+        'URIError',
+        'ArrayBuffer',
+        'SharedArrayBuffer',
+        'DataView',
+        'Float32Array',
+        'Float64Array',
+        'Int8Array',
+        'Int16Array',
+        'Int32Array',
+        'Uint8Array',
+        'Uint16Array',
+        'Uint32Array',
+        'Uint8ClampedArray',
+        'Atomics',
+        'JSON',
+        'Math',
+        'Reflect'].map(o => ({
+        id: o,
+        value: window[o],
+        children: []
+    }));
+    objects.forEach(o => set.add(o.value));
+    let realm = {
+        id: 'realm',
+        children: objects.slice(0)
+    };
+
+    // 广度优先遍历
+    for (let i = 0; i < objects.length; i++) {
+        let o = objects[i].value;
+        let name = objects[i].id;
+
+        // 拿到key和descriptor
+        for (let p of Object.getOwnPropertyNames(o)) {
+            let d = Object.getOwnPropertyDescriptor(o, p);
+            // 检查value本身
+            if ((d.value !== null && typeof d.value === "object") || (typeof d.value === "function")) {
+                if (!set.has(d.value)) {
+                    set.add(d.value);
+                    let o = {
+                        id: `${name}.${p}`,
+                        value: d.value,
+                        children: []
+                    };
+                    objects.push(o);
+                    objects[i].children.push(o);
+                } else {
+                    if (name === 'Array.prototype') {
+                        console.log("555")
+                    }
+                }
+            }
+            // 检查get/set
+            if (d.get) {
+                if (!set.has(d.get)) {
+                    set.add(d.get);
+                    let o = {
+                        id: `${name}.${p}.get`,
+                        value: d.get,
+                        children: []
+                    };
+                    objects.push(o);
+                    objects[i].children.push(o)
+                }
+            }
+            if (d.set) {
+                if (!set.has(d.set)) {
+                    set.add(d.set);
+                    let o = {
+                        id: `${name}.${p}.set`,
+                        value: d.set,
+                        children: []
+                    };
+                    objects.push(o);
+                    objects[i].children.push(o);
+                }
+            }
+        }
+    }
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const graph = new G6.TreeGraph({
+        container: 'container',
+        width,
+        height,
+        modes: {
+            default: [
+                {
+                    type: 'collapse-expand',
+                    onChange: function onChange(item, collapsed) {
+                        const data = item.get('model').data;
+                        data.collapsed = collapsed;
+                        return true;
+                    },
+                },
+                'drag-canvas',
+                'zoom-canvas',
+            ],
+        },
+        defaultNode: {
+            size: 26,
+            anchorPoints: [
+                [0, 0.5],
+                [1, 0.5],
+            ],
+            style: {
+                fill: '#C6E5FF',
+                stroke: '#5B8FF9',
+            },
+        },
+        defaultEdge: {
+            type: 'cubic-horizontal',
+            style: {
+                stroke: '#A3B1BF',
+            },
+        },
+        layout: {
+            type: 'dendrogram',
+            direction: 'LR', // H / V / LR / RL / TB / BT
+            nodeSep: 30,
+            rankSep: 100,
+        },
+    });
+
+    graph.node(function (node) {
+        return {
+            label: node.id,
+            labelCfg: {
+                position: node.children && node.children.length > 0 ? 'left' : 'right',
+                offset: 5,
+            },
+        };
+    });
+
+    graph.data(realm);
+    graph.render();
+    graph.fitView();
+</script>
+
+</body>
+</html>
