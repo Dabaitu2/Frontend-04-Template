@@ -109,12 +109,16 @@
     function getNext(pattern) {
         // 计算next/fail数组, 其实等于模式串和自己匹配的过程，
         // 将i设置为主串下标。match设置为模式串下标，其实都是一个串
-        // 举个例子
+        // 这里面蕴藏了动态规划的思想，也就是在判断当前的主串元素的fail时，当前位置向前已经匹配了多少个，以及模式串前进了几位已经被记录下来了
+        // 举个例子，设主串指针为j, 模式串指针为x（同时x也代表了满足 0-X = J-X...J) 的最大x值
         //         abcdabce
-        //          abcdabce    -> next[1] = 0
-        //           abcdabce   -> next[2] = 0
-        //            abcdabce  -> next[3] = 0
-        //             abcdabce -> next[4] = 1, next[5] = 2, next[6] = 3, next[7] = 0
+        //          abcdabce    -> next[1] = 0，主串后移，模式串归零
+        //           abcdabce   -> next[2] = 0，主串后移
+        //            abcdabce  -> next[3] = 0，主串后移
+        //             [a]bcdabce -> 主串模式串同时后移，主串j = 4，next[j = 4] = [x=1]，相当于此时第四位可以回退到第一位,重复长度1
+        //             [ab]cdabce -> next[5] = 2，主串模式串同时后移， 主串j = 5， next[5] = [x=2]，第五位可以回退到第二位，重复长度为2
+        //             [abc]dabce -> next[6] = 3，主串模式串同时后移
+        //              abcd[失配]abce -> next[7] = 0， 主串后移，模式串回退到0
         let table = new Array(pattern.length).fill(0);
         // 因为第一个字符肯定无任何匹配，故从第二个元素开始遍历
         for (let i = 1, match = 0; i < table.length - 1; i++) {
