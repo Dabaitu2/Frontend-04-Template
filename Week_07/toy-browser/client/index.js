@@ -1,4 +1,5 @@
 const net = require("net");
+const parser = require('./parser');
 
 /**
  * 只处理了json/urlEncoded两种简单格式
@@ -309,5 +310,5 @@ void async function () {
         }
     });
     let response = await request.send();
-    console.log(response);
+    let dom = parser.parseHTML(response.body);
 }();
