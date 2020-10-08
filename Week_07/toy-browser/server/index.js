@@ -14,7 +14,7 @@ http.createServer((req, res) => {
 `<html maaa="a">
 <head>
     <style>
-        body div #myid {
+        body div img#myid.hello {
             width: 100px;
             background-color:#ff5000;
         }
@@ -25,8 +25,9 @@ http.createServer((req, res) => {
     </style>
     <body>
         <div>
-            <img id="myid"/>
+            <img id="myid" class="hello"/>
             <img />
+            <img class="hi yes"/>
         </div>
     </body>
 </head>

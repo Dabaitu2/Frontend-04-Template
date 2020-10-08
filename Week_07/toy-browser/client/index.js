@@ -61,7 +61,7 @@ class Request {
     /**
      * 构造HTTP请求文本
      * header每一行都是用\r\n来分隔的
-     * body和header之间有一个空行, 故为\r\r
+     * body和header之间有一个空行, 故为\r\r\n
      * 多行字符串一定要注意格式，不能有任何多余的空白，不然就会请求失败
      * @return {string}
      */
