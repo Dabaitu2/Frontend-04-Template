@@ -1,4 +1,5 @@
 const css = require('css');
+const layout = require("./layout");
 const EOF = Symbol('EOF');
 const TokenType = {
     END_TAG: 'endTag',
@@ -237,6 +238,8 @@ function emit(token) {
             }
             stack.pop();
         }
+        // 遇到结束标签时可以对当前元素的内部进行flex布局
+        layout(top);
         // 遇到结束标签时需要将当前文本节点置空
         currentTextNode = null;
     } else if (token.type === TokenType.TEXT) {
@@ -481,6 +484,6 @@ module.exports.parseHTML = function ParseHTML(html) {
         state = state(c);
     }
     state = state(EOF);
-    console.log(stack);
+    return stack[0];
 }
 

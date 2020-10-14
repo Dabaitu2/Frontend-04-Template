@@ -1,0 +1,23 @@
+{
+  "name": "frontend-04-template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dabaitu2/Frontend-04-Template.git"
+  },
+  "author": "zhanghaoyang",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Dabaitu2/Frontend-04-Template/issues"
+  },
+  "homepage": "https://github.com/Dabaitu2/Frontend-04-Template#readme",
+  "dependencies": {
+    "css": "^3.0.0",
+    "images": "^3.2.3"
+  }
+}

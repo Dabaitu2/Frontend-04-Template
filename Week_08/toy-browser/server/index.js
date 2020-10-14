@@ -14,23 +14,29 @@ http.createServer((req, res) => {
 `<html maaa="a">
 <head>
     <style>
-        body div img#myid.hello {
-            width: 100px;
-            background-color:#ff5000;
+        #container {
+            width: 500px;
+            height: 300px;
+            display: flex;
+            background-color: rgb(255,255,255);
         }
-        body div img {
-            width: 30px;
-            background-color:#ff1111;
+        body div div#myid.hello {
+            width: 200px;
+            height: 100px;
+            background-color: rgb(255,123,111);
+        }
+        body div div.hi.yes {
+            flex: 1;
+            background-color: rgb(212,255,111);
         }
     </style>
+</head>
     <body>
-        <div>
-            <img id="myid" class="hello"/>
-            <img />
-            <img class="hi yes"/>
+        <div id="container">
+            <div id="myid" class="hello"/>
+            <div class="hi yes"/>
         </div>
     </body>
-</head>
 </html>
 `);
     })
