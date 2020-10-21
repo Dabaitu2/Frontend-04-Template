@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #container > .class h2#hello {
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div class="class">
+        <h2 id="hello">
+            <span>hi</span>
+        </h2>
+    </div>
+</div>
+<script>
+    const complexSelectorRegex = /^([a-zA-Z0-9]+)?(([.#]([^.#~*+]+))+)/;
+
+    /**
+     * 匹配简单选择器和复合选择器
+     * @param selector
+     * @param element
+     * @return {boolean}
+     */
+    function matchSimple(selector, element) {
+        const attributes = Array.prototype.map.call(element.attributes, _ => _);
+        if (!selector || !element.attributes) {
+            return false;
+        }
+
+        /**
+         * 匹配简单的 tagName.class#id 这种复合型选择器
+         */
+        if (selector.match(complexSelectorRegex)) {
+            const tagName = RegExp.$1;
+            const actualSelector = RegExp.$2;
+            let ids = (attributes.filter(attr => attr.name === 'id')[0] || {value: ''}).value.split(/[\s]+/);
+            let classNames = (attributes.filter(attr => attr.name === 'class')[0] || {value: ''}).value.split(/[\s]+/);
+            let selectorClass = actualSelector.split('.').slice(0).reduce((acc, cur) => {
+                let className = (cur.split('#') || [])[0];
+                if (className) {
+                    acc.push(className);
+                }
+                return acc;
+            }, []);
+            let selectorIds = actualSelector.split('#').slice(0).reduce((acc, cur) => {
+                let id = (cur.split('.') || [])[0];
+                if (id) {
+                    acc.push(id);
+                }
+                return acc;
+            }, []);
+            if (tagName && tagName.toUpperCase() !== element.tagName) {
+                return false;
+            }
+            for (const className of selectorClass) {
+                if (!classNames.includes(className)) {
+                    return false;
+                }
+            }
+            for (const selectorId of selectorIds) {
+                if (!ids.includes(selectorId)) {
+                    return false;
+                }
+            }
+            return true;
+        } else if (selector.charAt(0) === '#') {
+            let attr = attributes.filter(attr => attr.name === 'id')[0];
+            if (attr && attr.value === selector.replace('#', '')) {
+                return true;
+            }
+        } else if (selector.charAt(0) === ".") {
+            let attr = attributes.filter(attr => attr.name === 'class')[0];
+            let classnames = attr.value.split(/[\s]+/);
+            if (classnames && classnames.includes(selector.replace('.', ''))) {
+                return true;
+            }
+        } else {
+            if (element.tagName === selector.toUpperCase()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 匹配祖先选择器
+     * parentNode跟parentElement除了前者是w3c标准，后者只ie支持
+     * 当父节点的nodeType不是1，即不是element节点的话，它的parentElement就会是null
+     * 一般情况parentNode可以取代parentElement的所有功能
+     */
+    function match(selector, element) {
+        const simpleSelectors = selector.split(/\s+/);
+        let ptr = simpleSelectors.length - 1;
+        while (ptr >= 0) {
+            if (simpleSelectors[ptr] === '>') {
+                ptr--;
+            }
+            if (matchSimple(simpleSelectors[ptr], element)) {
+                ptr--;
+                element = element.parentNode;
+            } else {
+                if (simpleSelectors[ptr + 1] !== '>' && element.parentNode !== document) {
+                    element = element.parentNode;
+                } else {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    console.log(match("#container > .class h2#hello", document.getElementById("hello")));
+</script>
+</body>
+</html>
