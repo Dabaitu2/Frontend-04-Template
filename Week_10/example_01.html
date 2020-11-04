@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>正常流的行级排布</title>
+</head>
+<body>
+<div style="font-size: 50px;line-height: 100px;background-color:pink;">
+    <div style="vertical-align: top;overflow: visible;display: inline-block;width: 1px;height: 1px;">
+        <div style="width: 1000px;height: 1px; background-color:red;"></div>
+    </div>
+    <div style="vertical-align: bottom;overflow: visible;display: inline-block;width: 1px;height: 1px;">
+        <div style="width: 1000px;height: 1px; background-color:red;"></div>
+    </div>
+    <div style="vertical-align: middle;overflow: visible;display: inline-block;width: 1px;height: 1px;">
+        <div style="width: 1000px;height: 1px; background-color:red;"></div>
+    </div>
+    <div style="vertical-align: baseline;overflow: visible;display: inline-block;width: 1px;height: 1px;">
+        <div style="width: 1000px;height: 1px; background-color:red;"></div>
+    </div>
+    <div style="vertical-align: text-top;overflow: visible;display: inline-block;width: 1px;height: 1px;">
+        <div style="width: 1000px;height: 1px; background-color:red;"></div>
+    </div>
+    <div style="vertical-align: text-bottom;overflow: visible;display: inline-block;width: 1px;height: 1px;">
+        <div style="width: 1000px;height: 1px; background-color:red;"></div>
+    </div>
+    <span>Hello good</span>
+    <!--    基线对齐，盒的下边沿和 基线对齐 -->
+        <div style="line-height: 70px;width: 100px;height: 150px;background-color: aqua;display: inline-block">a</div>
+    <!--    当行内盒中存在文字，则基线变为盒子中文字的基线 -->
+        <div style="line-height: 70px;width: 100px;height: 150px;background-color: aqua;display: inline-block;vertical-align: bottom">b</div>
+    <!--    设置vertical-align: top/bottom 则会用行内盒子的顶部和底部去和行盒子的顶部/底部 对齐, 从而从下方/上方把line-bottom/top 撑开,如果line-height 已经够了，则后面的会直接照着新的line-height 对齐 -->
+    <div style="line-height: 70px;width: 100px;height: 150px;background-color: aqua;display: inline-block;vertical-align: top">c</div>
+</div>
+</body>
+</html>
