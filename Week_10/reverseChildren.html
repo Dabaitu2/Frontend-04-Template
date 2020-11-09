@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>reverseChildren</title>
+</head>
+<body>
+<div id="a">
+    <span>1</span>
+    <p>2</p>
+    <p>3</p>
+    <div>4</div>
+</div>
+<script>
+    void function (run) {
+        if (!run) {
+            return;
+        }
+        // 逆序第一版，如果不知道living collection的特征
+        let element = document.getElementById('a');
+
+        function reverseChildren(element) {
+            // 获得一个非living collection 的数组，对其中元素的操作将不会影响dom树
+            let children = Array.prototype.slice.call(element.childNodes);
+            for (let child of children) {
+                element.removeChild(child);
+            }
+            children.reverse();
+            for (let child of children) {
+                element.appendChild(child);
+            }
+        }
+        reverseChildren(element);
+    }(false);
+</script>
+
+<script>
+    void function (run) {
+        if (!run) {
+            return;
+        }
+        // 逆序第二版
+        let element = document.getElementById('a');
+
+        function reverseChildren(element) {
+            var i = element.children.length;
+            while (i-- > 0) {
+                // 使用appendChild 来操作时
+                // 因为所在的dom树实际上具有living Collection 的特征
+                // 因此不需要去先从原有dom树上remove掉, 也不需要让其他的dom元素挪位置
+                element.appendChild(element.children[i]);
+            }
+        }
+
+        reverseChildren(element);
+    }(false);
+</script>
+
+<script>
+    void function(run) {
+        if (!run) {
+            return;
+        }
+        // 逆序第二版
+        let element = document.getElementById('a');
+
+        function reverseChildren(element) {
+            let range = new Range();
+            // 选中所有的node节点
+            range.selectNodeContents(element);
+            // 抽出所有的内容，并存进documentFragment
+            // rangeAPI 好就好在不需要自己创建fragment了，而是直接抽出来的东西就是fragment
+            let fragment = range.extractContents();
+            var l = fragment.childNodes.length;
+            while (l-- > 0) {
+                // 使用fragment
+                // 其本身也具有dom树的一切特征
+                // 但并不会真的在屏幕上展开操作。可以避免重排
+                fragment.appendChild(fragment.childNodes[l]);
+            }
+            element.appendChild(fragment);
+        }
+
+        reverseChildren(element);
+    }(true)
+</script>
+</body>
+</html>

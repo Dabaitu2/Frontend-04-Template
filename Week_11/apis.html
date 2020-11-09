@@ -1,0 +1,582 @@
+<script>
+    let names = Object.getOwnPropertyNames(window);
+
+    function filterOut(names, props) {
+        let set = new Set();
+        props.forEach(o => set.add(o));
+        return names.filter(e => !set.has(e));
+    }
+
+    // Node 的子节点，比如 HTMLXXXElement, 来自DOM API
+    names = names.filter(e => {
+        try {
+            return !(window[e].prototype instanceof Node)
+        } catch (err) {
+            return true;
+        }
+    }).filter(e => e != "Node");
+
+
+    // 忽略webKit 的实现，忽略 onXX 等事件处理机制
+    names = names.filter(e => !e.match(/^on/))
+    names = names.filter(e => !e.match(/^([wW])eb[kK]it/))
+    names = names.filter(e => !e.match(/^moz/))
+
+
+    // 关于ECMAScript 的规范
+    // ECMA 262
+    names = filterOut(names, ["globalThis", "console", "BigInt", "BigInt64Array", "BigUint64Array", "Infinity", "NaN", "undefined", "eval", "isFinite", "isNaN", "parseFloat", "parseInt", "decodeURI", "decodeURIComponent", "encodeURI", "encodeURIComponent", "Array", "Date", "RegExp", "Promise", "Proxy", "Map", "WeakMap", "Set", "WeakSet", "Function", "Boolean", "String", "Number", "Symbol", "Object", "Error", "EvalError", "RangeError", "ReferenceError", "SyntaxError", "TypeError", "URIError", "ArrayBuffer", "SharedArrayBuffer", "DataView", "Float32Array", "Float64Array", "Int8Array", "Int16Array", "Int32Array", "Uint8Array", "Uint16Array", "Uint32Array", "Uint8ClampedArray", "Atomics", "JSON", "Math", "Reflect", "escape", "unescape"]);
+
+
+    // 关于window的规范
+    //https://html.spec.whatwg.org/#window
+    names = filterOut(names, ["window", "self", "document", "name", "location", "history", "customElements", "locationbar", "menubar", " personalbar", "scrollbars", "statusbar", "toolbar", "status", "close", "closed", "stop", "focus", " blur", "frames", "length", "top", "opener", "parent", "frameElement", "open", "navigator", "applicationCache", "alert", "confirm", "prompt", "print", "postMessage", "console", "origin", "personalbar"]);
+
+    // 关于HTML的 Living Standard 规范
+    //https://html.spec.whatwg.org/
+    names = filterOut(names, ['ApplicationCache', 'AudioTrack', 'AudioTrackList', 'BarProp', 'BeforeUnloadEvent', 'BroadcastChannel', 'CanvasGradient', 'CanvasPattern', 'CanvasRenderingContext2D', 'CloseEvent', 'CustomElementRegistry', 'DOMParser', 'DOMStringList', 'DOMStringMap', 'DataTransfer', 'DataTransferItem', 'DataTransferItemList', 'DedicatedWorkerGlobalScope', 'Document', 'DragEvent', 'ElementInternals', 'ErrorEvent', 'EventSource', 'External', 'FormDataEvent', 'HTMLAllCollection', 'HTMLAnchorElement', 'HTMLAreaElement', 'HTMLAudioElement', 'HTMLBRElement', 'HTMLBaseElement', 'HTMLBodyElement', 'HTMLButtonElement', 'HTMLCanvasElement', 'HTMLDListElement', 'HTMLDataElement', 'HTMLDataListElement', 'HTMLDetailsElement', 'HTMLDialogElement', 'HTMLDirectoryElement', 'HTMLDivElement', 'HTMLElement', 'HTMLEmbedElement', 'HTMLFieldSetElement', 'HTMLFontElement', 'HTMLFormControlsCollection', 'HTMLFormElement', 'HTMLFrameElement', 'HTMLFrameSetElement', 'HTMLHRElement', 'HTMLHeadElement', 'HTMLHeadingElement', 'HTMLHtmlElement', 'HTMLIFrameElement', 'HTMLImageElement', 'HTMLInputElement', 'HTMLLIElement', 'HTMLLabelElement', 'HTMLLegendElement', 'HTMLLinkElement', 'HTMLMapElement', 'HTMLMarqueeElement', 'HTMLMediaElement', 'HTMLMenuElement', 'HTMLMetaElement', 'HTMLMeterElement', 'HTMLModElement', 'HTMLOListElement', 'HTMLObjectElement', 'HTMLOptGroupElement', 'HTMLOptionElement', 'HTMLOptionsCollection', 'HTMLOutputElement', 'HTMLParagraphElement', 'HTMLParamElement', 'HTMLPictureElement', 'HTMLPreElement', 'HTMLProgressElement', 'HTMLQuoteElement', 'HTMLScriptElement', 'HTMLSelectElement', 'HTMLSlotElement', 'HTMLSourceElement', 'HTMLSpanElement', 'HTMLStyleElement', 'HTMLTableCaptionElement', 'HTMLTableCellElement', 'HTMLTableColElement', 'HTMLTableElement', 'HTMLTableRowElement', 'HTMLTableSectionElement', 'HTMLTemplateElement', 'HTMLTextAreaElement', 'HTMLTimeElement', 'HTMLTitleElement', 'HTMLTrackElement', 'HTMLUListElement', 'HTMLUnknownElement', 'HTMLVideoElement', 'HashChangeEvent', 'History', 'ImageBitmap', 'ImageBitmapRenderingContext', 'ImageData', 'Location', 'MediaError', 'MessageChannel', 'MessageEvent', 'MessagePort', 'MimeType', 'MimeTypeArray', 'Navigator', 'OffscreenCanvas', 'OffscreenCanvasRenderingContext2D', 'PageTransitionEvent', 'Path2D', 'Plugin', 'PluginArray', 'PopStateEvent', 'PromiseRejectionEvent', 'RadioNodeList', 'SharedWorker', 'SharedWorkerGlobalScope', 'Storage', 'StorageEvent', 'SubmitEvent', 'TextMetrics', 'TextTrack', 'TextTrackCue', 'TextTrackCueList', 'TextTrackList', 'TimeRanges', 'TrackEvent', 'ValidityState', 'VideoTrack', 'VideoTrackList', 'WebSocket', 'Window', 'Worker', 'WorkerGlobalScope', 'WorkerLocation', 'WorkerNavigator', 'Worklet', 'WorkletGlobalScope', 'setInterval', 'setTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'clearInterval', 'clearTimeout', 'clientInformation', 'sessionStorage', 'localStorage', 'atob', 'btoa', 'blur', 'createImageBitmap', 'queueMicrotask']);
+
+    // 从html 规范中被删除的
+    names = filterOut(names, ['external'])
+
+    // 关于国际化的规范
+    //http://www.ecma-international.org/ecma-402/5.0/index.html#Title
+    names = filterOut(names, ['Intl'])
+
+    // 关于webGL的规范
+    //https://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15
+    names = filterOut(names, ["WebGLVertexArrayObject", "WebGLTransformFeedback", "WebGLSync", "WebGLSampler", "WebGLQuery", "WebGL2RenderingContext", "WebGLContextEvent", "WebGLObject", "WebGLBuffer", "WebGLFramebuffer", "WebGLProgram", "WebGLRenderbuffer", "WebGLShader", "WebGLTexture", "WebGLUniformLocation", "WebGLActiveInfo", "WebGLShaderPrecisionFormat", "WebGLRenderingContext"]);
+
+    // 关于web audio的规范
+    //https://www.w3.org/TR/webaudio/
+    names = filterOut(names, ["AudioContext", "AudioNode", "AnalyserNode", "AudioBuffer", "AudioBufferSourceNode", "AudioDestinationNode", "AudioParam", "AudioListener", "AudioWorklet", "AudioWorkletGlobalScope", "AudioWorkletNode", "AudioWorkletProcessor", "BiquadFilterNode", "ChannelMergerNode", "ChannelSplitterNode", "ConstantSourceNode", "ConvolverNode", "DelayNode", "DynamicsCompressorNode", "GainNode", "IIRFilterNode", "MediaElementAudioSourceNode", "MediaStreamAudioSourceNode", "MediaStreamTrackAudioSourceNode", "MediaStreamAudioDestinationNode", "PannerNode", "PeriodicWave", "OscillatorNode", "StereoPannerNode", "WaveShaperNode", "ScriptProcessorNode", "AudioProcessingEvent", "OfflineAudioContext", "OfflineAudioCompletionEvent", 'BaseAudioContext', "AudioScheduledSourceNode", 'AudioParamMap']);
+
+    // 关于encoding 编码的规范
+    //https://encoding.spec.whatwg.org/#dom-textencoder
+    names = filterOut(names, ["TextDecoder", "TextEncoder", "TextDecoderStream", "TextEncoderStream"]);
+
+    // 关于Streams的规范
+    //https://streams.spec.whatwg.org/#blqs-class
+    names = filterOut(names, ["ReadableStream", "ReadableStreamDefaultReader", "ReadableStreamBYOBReader", "ReadableStreamDefaultController", "ReadableByteStreamController", "ReadableStreamBYOBRequest", "WritableStream", "WritableStreamDefaultWriter", "WritableStreamDefaultController", "TransformStream", "TransformStreamDefaultController", "ByteLengthQueuingStrategy", "CountQueuingStrategy"]);
+
+
+    // 关于SyncManager的规范
+    //https://wicg.github.io/BackgroundSync/spec/#sync-manager-interface
+    names = filterOut(names, ["SyncManager"]);
+
+    // 对于WHATWG 的规范文档，统一可以用如下代码处理, 但不保证全..
+    // 有的时候，class 也需要被考虑
+    /**
+     *
+     * let toc = document.getElementById("toc")
+     * let collections = []
+     * for (let code of toc.getElementsByTagName('code')) {
+     *      if (code.previousSibling.textContent === "Interface ") {
+                collections.push(code.childNodes[0].childNodes[0].data)
+            }
+        }
+     */
+    // 关于DOM 的规范
+    // https://dom.spec.whatwg.org/
+    names = filterOut(names, ["Event", "CustomEvent", "EventTarget", "AbortController", "AbortSignal", "NodeList", "HTMLCollection", "MutationObserver", "MutationRecord", "Node", "Document", "DOMImplementation", "DocumentType", "DocumentFragment", "ShadowRoot", "Element", "NamedNodeMap", "Attr", "CharacterData", "Text", "CDATASection", "ProcessingInstruction", "Comment", "AbstractRange", "StaticRange", "Range", "NodeIterator", "TreeWalker", "NodeFilter", "DOMTokenList", "XPathResult", "XPathExpression", "XPathEvaluator", 'getComputedStyle', 'event'])
+
+    // 关于DOM level 0 或者说 BOM Browser Object Model 浏览器对象模型
+    // DOM LEVEL 0 不属于规范，自从支持JavaScript以来，浏览器提供了一组功能有限的对象。在Netscape Navigator和internetexplorer的浏览器大战中，它们提供了不同的功能集。
+    // 这两个集合的交集在今天仍然存在；现代浏览器仍然支持它们。这些对象被称为浏览器对象模型（Browser Object Model），或者非正式地称为level0dom，
+    // 因为它在DOM标准化之前就已经存在了。没有真正的0级DOM规范
+    names = filterOut(names, ['find'])
+
+    // 关于 XMLSerializer 的规范
+    // https://w3c.github.io/DOM-Parsing/#the-xmlserializer-interface
+    names = filterOut(names, ["DOMParser", "XMLSerializer"])
+
+    // 关于xhr 的规范
+    // https://xhr.spec.whatwg.org/#the-upload-attribute
+    names = filterOut(names, ["XMLHttpRequest", "FormData", "ProgressEvent", "XMLHttpRequestUpload", "XMLHttpRequestEventTarget"])
+
+    // 对于W3C 的文档，可以使用以下手段处理
+    /**
+     * // 正向肯定预查，只有当前面是"Interface "开头时完成匹配，并匹配后面的内容
+     * let targetRegExp = /(?<=^Interface\s)[\S]+/;
+     * for (let content of toc.querySelectorAll("span.content")) {
+     *      let matchRst = content.childNodes[0].textContent.match(/(?<=^Interface\s)[\S]+/);
+     *      if (matchRst) {
+     *          collections.push(matchRst[0])
+            }
+        }
+     *
+     */
+    // W3C 关于UI event 的规范
+    // https://w3c.github.io/uievents/
+    names = filterOut(names, ["UIEvent", "FocusEvent", "MouseEvent", "WheelEvent", "InputEvent", "KeyboardEvent", "CompositionEvent", "UIEvent", "UIEventInit", "KeyboardEvent", "KeyboardEventInit", "MutationEvent"])
+
+    // wicg 对于viewport的规范
+    // https://wicg.github.io/visual-viewport/#the-visualviewport-interface
+    names = filterOut(names, ['VisualViewport'])
+
+    // w3c 对于 The Web Video Text Tracks Format（网络视频文本跟踪格式） 的提案 （主要是用作视频字幕等
+    // https://w3c.github.io/webvtt/
+    names = filterOut(names, ['VTTCue', 'VTTRegion']);
+
+    // google 对于User Activation 的自行实现， User Activation 是针对防止恶意脚本滥用js，来做弹窗，全屏的干扰功能，从而定义的一种状态
+    // 表示当前用户正在与页面交互，而如何定义，触发这种激活状态就是User Activation 做的
+    // https://developers.google.com/web/updates/2019/01/user-activation
+    names = filterOut(names, ['UserActivation']);
+
+    // whatwg 对于URL 的规范
+    // https://url.spec.whatwg.org/#urlsearchparams
+    names = filterOut(names, ['URLSearchParams', 'URL'])
+
+    // w3c csswg working group 对于 css 过渡的规范
+    // https://drafts.csswg.org/css-transitions/
+    names = filterOut(names, ['TransitionEvent']);
+
+    // w3c 对于触摸事件的规范
+    // https://w3c.github.io/touch-events
+    names = filterOut(names, ['Touch', 'TouchList', 'TouchEvent']);
+
+    // 似乎也应该属于UIEvent 规范
+    // https://webplatform.github.io/docs/dom/TextEvent/
+    names = filterOut(names, ['TextEvent'])
+
+    // w3c 对于longTask API 的规范草案，这个跟性能监控有关，在google的RUM标准中，提出将主线程执行超过 50ms 的任务定义为 longTask
+    // https://w3c.github.io/longtasks/#sec-TaskAttributionTiming
+    names = filterOut(names, ['TaskAttributionTiming', 'PerformanceLongTaskTiming'])
+
+    // https://drafts.csswg.org/cssom/#the-stylesheet-interface
+    // csswg 对于 cssom 的规范
+    names = filterOut(names, ["MediaList", "StyleSheet", "CSSStyleSheet", "StyleSheetList", "LinkStyle", "CSSRuleList", "CSSRule", "CSSStyleRule", "CSSImportRule", "CSSGroupingRule", "CSSMediaRule", "CSSPageRule", "CSSMarginRule", "CSSNamespaceRule", "CSSStyleDeclaration", 'CSS', 'CSSPropertyRule'])
+
+    // https://drafts.css-houdini.org/css-typed-om-1/#stylepropertymapreadonly
+    // CSSWG 对于CSS Typed OM 的规范
+    // CSS类型对象模型API通过将CSS值显示为类型JavaScript对象而不是字符串来简化CSS属性操作。与HTMLElement.style相比，这不仅简化了CSS操作，而且减轻了对性能的负面影响
+    // 作为 Houdini 工作的一部分，新的 CSS 类型对象模型（Typed OM）， 通过给 CSS 值添加类型、方法和适当的对象模型来进行扩展。值不再是字符串，而是作为 JavaScript 对象的值，用于提升 CSS 的性能和更加合理的操作。
+    // 比如曾经 width: 10 的10 在老版本的对象模型中也是字符串，而在typed OM中将会成为Number类型
+    names = filterOut(names, ["CSSStyleValue", "CSSStyleValue", "StylePropertyMap", "StylePropertyMapReadOnly", "StylePropertyMap", "CSSStyleValue", "CSSUnparsedValue", "CSSKeywordValue", "CSSNumericValue", "CSSUnitValue", "CSSMathValue", "CSSTransformValue", "CSSImageValue", "CSSStyleValue", "CSSStyleValue", "CSSUnparsedValue", "CSSKeywordValue", "CSSUnitValue", "CSSMathValue", "CSSTransformValue", "CSSTransformComponent", "CSSURLImageValue", 'CSSVariableReferenceValue', 'CSSTranslate', "CSSSkewY", "CSSSkewX", "CSSSkew", "CSSScale", "CSSRotate", 'CSSPerspective', 'CSSNumericArray', 'CSSMatrixComponent', "CSSMathSum", "CSSMathProduct", "CSSMathNegate", "CSSMathMin", "CSSMathMax", "CSSMathInvert"])
+    // 被废弃的
+    names = filterOut(names, ["CSSPositionValue"])
+
+    // https://w3c.github.io/selection-api/#selection-interface
+    // W3C 对于 SelectionAPI 的规范，供选择的API，这些API允许用户和作者选择文档的一部分或为复制，粘贴和其他编辑操作指定兴趣点
+    names = filterOut(names, ['Selection', 'getSelection'])
+
+    // https://w3c.github.io/webappsec-csp/2/#firing-securitypolicyviolationevent-events
+    // w3c 对于CSP 内容安全策略相关的规范提案
+    names = filterOut(names, ['SecurityPolicyViolationEvent', 'SecurityPolicyViolationEventInit'])
+
+    // https://w3c.github.io/screen-orientation/#dom-screen-orientation
+    // w3c 对于Screen Orientation API 相关的规范提案
+    // 提供了以下功能：读取屏幕方向类型和角度，在屏幕方向发生变化时得到通知以及将屏幕锁定为特定方向
+    names = filterOut(names, ['ScreenOrientation', 'Screen'])
+
+    // https://svgwg.org/svg2-draft/types.html#InterfaceSVGUnitTypes
+    // SVG working group 对于svg 的规范提案
+    names = filterOut(names, ["SVGElement", "SVGGraphicsElement", "SVGGeometryElement", "SVGNumber", "SVGLength", "SVGAngle", "SVGNumberList", "SVGLengthList", "SVGStringList", "SVGAnimatedBoolean", "SVGAnimatedEnumeration", "SVGAnimatedInteger", "SVGAnimatedNumber", "SVGAnimatedLength", "SVGAnimatedAngle", "SVGAnimatedString", "SVGAnimatedRect", "SVGAnimatedNumberList", "SVGAnimatedLengthList", "SVGUnitTypes"])
+
+    // https://svgwg.org/svg2-draft/coords.html#InterfaceSVGTransformList
+    // svg wg 对于 svg Coordinate Systems, Transformations and Units 坐标系，变换和单位的规范提案
+    names = filterOut(names, ['SVGTransform', "SVGTransformList", 'SVGAnimatedTransformList', 'SVGPreserveAspectRatio', 'SVGAnimatedPreserveAspectRatio'])
+
+    // https://www.w3.org/TR/SVG11/types.html#InterfaceSVGRect
+    // w3c 对于SVG 1.1 的提案
+    names = filterOut(names, ["SVGElement", "SVGAnimatedBoolean", "SVGAnimatedString", "SVGStringList", "SVGAnimatedEnumeration", "SVGAnimatedInteger", "SVGNumber", "SVGAnimatedNumber", "SVGNumberList", "SVGAnimatedNumberList", "SVGLength", "SVGAnimatedLength", "SVGLengthList", "SVGAnimatedLengthList", "SVGAngle", "SVGAnimatedAngle", "SVGColor", "SVGICCColor", "SVGRect", "SVGAnimatedRect", "SVGUnitTypes", "SVGStylable", "SVGLocatable", "SVGTransformable", "SVGTests", "SVGLangSpace", "SVGExternalResourcesRequired", "SVGFitToViewBox", "SVGZoomAndPan", "SVGViewSpec", "SVGURIReference", "SVGCSSRule", "SVGRenderingIntent"])
+
+    // https://svgwg.org/svg2-draft/shapes.html#InterfaceSVGPolygonElement
+    // svg wg 对于 svg 2 的基本形状 提案
+    names = filterOut(names, ["SVGRectElement", "SVGCircleElement", "SVGEllipseElement", "SVGLineElement", "SVGAnimatedPoints", "SVGPointList", "SVGPolylineElement", "SVGPolygonElement"])
+
+    // https://www.w3.org/TR/SVG11/coords.html#InterfaceSVGMatrix
+    // w3c 对于 svg 1.1 Coordinate Systems, Transformations and Units 坐标系，变换和单位的规范提案
+    // 有一些东东要过时了。会被svg wg推出的规范干掉
+    names = filterOut(names, ['SVGPoint', 'SVGPointList', 'SVGMatrix'])
+
+    // https://fetch.spec.whatwg.org/#response-class
+    // WHATWG 对于 fetch api 的规范
+    names = filterOut(names, ['Headers', 'Request', 'Response', 'fetch'])
+
+    // https://drafts.csswg.org/resize-observer/#resize-observer-entry-interface
+    // csswg 对resize-observer 的提案，它描述了一种用于观察元素大小变化的API，以mutationObserver 和 intersectionObserver 为模型
+    names = filterOut(names, ['ResizeObserver', 'ResizeObserverEntry', "ResizeObserverSize"])
+
+    // https://w3c.github.io/reporting/#intro
+    // w3c 对于Reporting API 的草案, 它定义了一个通用的报告框架，该框架允许Web开发人员将一组命名的报告端点与源关联。各种平台功能都可以使用这些端点以一致的方式交付功能特定的报告
+    names = filterOut(names, ['ReportingObserver'])
+
+    // https://w3c.github.io/webrtc-pc/#dom-rtctrackevent
+    // W3C 对于 WebRTC 协议的 推荐稿, RTC => Realtime Communication 浏览器之间的实时通信，
+    // 在WebIDL中定义了一组ECMAScript api，以允许将媒体发送到另一个实现了相应实时协议集的浏览器或设备上。
+    // 本规范与IETF RTCWEB组开发的协议规范和访问本地媒体设备的API规范一起开发
+    names = filterOut(names, ["RTCTrackEvent", "RTCStatsReport", "RTCSessionDescription", "RTCSctpTransport", "RTCRtpTransceiver", "RTCRtpSender", "RTCRtpReceiver", "RTCPeerConnectionIceEvent", "RTCPeerConnectionIceErrorEvent", "RTCPeerConnection", "RTCIceCandidate", "RTCErrorEvent", "RTCError", "RTCEncodedVideoFrame", "RTCEncodedAudioFrame", "RTCDtlsTransport", "RTCDataChannelEvent", "RTCDataChannel", "RTCDTMFToneChangeEvent", "RTCDTMFSender", "RTCCertificate", 'RTCIceTransport'])
+
+    // https://www.w3.org/TR/pointerevents2/#pointerevent-interface
+    // W3c 对于 Pointer Event 的规范，即指针事件
+    names = filterOut(names, ['PointerEvent'])
+
+    // https://www.w3.org/TR/navigation-timing/#sec-navigation-timing-interface
+    // w3c 对于 Navigation Timing 的规范， 此规范定义了一个接口，用于web应用程序访问与导航和元素相关的计时信息
+    names = filterOut(names, ['PerformanceTiming', 'PerformanceNavigation'])
+
+    // https://w3c.github.io/server-timing/#the-performanceservertiming-interface
+    // w3c 对于 Server Timing 的规范草案 WD， 此规范使服务器能够将有关请求-响应周期的性能度量传递给用户代理。它还标准化了JavaScript接口，使应用程序能够收集、处理并根据这些指标采取行动，从而优化应用程序交付。
+    names = filterOut(names, ['PerformanceServerTiming', 'PerformanceResourceTiming', 'PerformanceNavigationTiming'])
+
+    // https://w3c.github.io/paint-timing/#intro
+    // W3c 对于 Painting Timing 的规范草案，定义了一个API，该API可用于捕获开发人员关心的页面加载期间的一系列关键时刻
+    // 比如 FP， FCP 等
+    names = filterOut(names, ['PerformancePaintTiming'])
+
+    // https://w3c.github.io/performance-timeline/#idl-def-performanceobserverentrylist
+    // W3c 关于 Performace-timeline 的规范草案，提供存储和检索高分辨率性能度量数据的方法，扩展了高精度时间规范
+    names = filterOut(names, ['PerformanceEntry', 'PerformanceObserverEntryList', 'PerformanceObserver'])
+
+    // https://w3c.github.io/user-timing/#dom-performance-measure
+    // w3c 对于 user timing 的规范。该规范定义了一个接口，通过允许web开发人员访问高精度的时间戳，帮助web开发人员度量应用程序的性能。
+    names = filterOut(names, ['PerformanceMark', 'PerformanceMeasure'])
+
+    // https://wicg.github.io/event-timing/#sec-performance-event-timing
+    // w3c cg 社区组 提出的 Event Timing 规范，定义了一个API，它为web页面作者提供了对用户交互触发的某些事件延迟的深入了解
+    names = filterOut(names, ['PerformanceEventTiming', 'EventCounts'])
+
+    // https://wicg.github.io/element-timing/
+    // w3c cg 社区组 提出的 Element Timing API 规范，定义了一个API，该API可以监视何时在屏幕上显示大的或开发人员指定的图像元素和文本节点
+    names = filterOut(names, ['PerformanceElementTiming'])
+
+    // https://w3c.github.io/hr-time/#dom-performance-timeorigin
+    // W3c 提出的 High Resolution Time 规范，定义了一个API，该API以亚毫秒级的精度提供时间起点和当前时间，因此它不受系统时钟偏差或调整的影响。
+    names = filterOut(names, ['Performance', 'performance'])
+
+    // https://w3c.github.io/mediacapture-main/#intro
+    // w3c 提出的关于 Media Capture and Streams 媒体录制和流 相关的规范，定义了一组JavaScript API，这些API允许从平台请求本地媒体（包括音频和视频）
+    names = filterOut(names, ['OverconstrainedError', 'MediaDevices', 'MediaStream', 'MediaStreamEvent', 'MediaStreamTrack', 'MediaStreamTrackEvent', 'InputDeviceInfo', ''])
+
+    // https://w3c.github.io/mediacapture-record/#MediaRecorderAPI
+    // w3c 提出的关于 媒体录制记录 MediaStream Recording 相关的规范，和MediaStream 相关
+    names = filterOut(names, ['MediaRecorder', 'BlobEvent'])
+
+    // https://wicg.github.io/netinfo/#idl-def-NetworkInformation
+    // w3c cg 提出的关于 Network Information API 相关的规范草案，使Web应用程序可以访问有关设备正在使用的网络连接的信息 (浏览器支持很差
+    names = filterOut(names, ['NavigatorNetworkInformation', 'NetworkInformation'])
+
+    // https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener
+    // CSS WG 提出的关于 CSSOM view 相关的草案，本规范引入的api为作者提供了一种检查和操作文档可视视图的方法。这包括获取元素布局框的位置、通过脚本获得视口的宽度以及滚动元素。
+    names = filterOut(names, ['MediaQueryList', 'MediaQueryListEvent', 'Screen', 'CaretPosition', "screenX", "screenY", "outerWidth", "outerHeight", 'devicePixelRatio', "screenLeft", "screenTop", 'innerWidth', 'innerHeight', 'screen', 'scrollX', 'scrollY', 'pageXOffset', 'pageYOffset', 'scrollTo', 'scrollBy', 'scroll', 'resizeTo', 'resizeBy', 'moveTo', 'moveBy', 'matchMedia'])
+    // 被废弃的
+    names = filterOut(names, ['CSSPrimitiveValue', 'CSSValueList', 'CSSValue'])
+
+    // https://www.w3.org/TR/encrypted-media/
+    // w3c 提出的 关于 Encrypted Media Extension 相关的 规范，即加密媒体扩展，提供API以控制加密内容的播放
+    names = filterOut(names, ['MediaKeyStatusMap', 'MediaKeyMessageEvent', 'MediaKeySystemAccess', 'MediaEncryptedEvent'])
+
+    // https://w3c.github.io/media-capabilities/
+    // w3c 提出的关于 Media Capabilities 的草案,
+    // 提供api，以允许网站在为用户选择媒体内容时做出最佳决策。这些api将公开给定格式的解码和编码功能的相关信息，还将根据设备的显示来输出查找最佳匹配的功能
+    names = filterOut(names, ['MediaCapabilities'])
+
+    // https://wicg.github.io/layout-instability/#layoutshift
+    // w3c cg 提出的 有关 Layout instability API 即 布局不稳定性 的草案
+    // 它根据页面上元素的移动，为web页面作者提供对页面稳定性的见解
+    names = filterOut(names, ['LayoutShift', 'LayoutShiftAttribution'])
+
+
+    // https://wicg.github.io/largest-contentful-paint/#sec-largest-contentful-paint-interface
+    // w3c cg 提出的有关 LCP 的 草案， 可以监视屏幕上触发的最大的绘制元素
+    names = filterOut(names, ['LargestContentfulPaint'])
+
+    // https://drafts.csswg.org/web-animations-1/#the-keyframeeffect-interface
+    // css wg 提出的有关 Web Animation 的草案
+    names = filterOut(names, ['AnimationTimeline', 'DocumentTimeline', 'Animation', 'AnimationEffect', 'KeyframeEffect', 'AnimationPlaybackEvent'])
+
+    // https://w3c.github.io/IntersectionObserver/#intersection-observer-entry
+    // w3c 提出的 有关 Intersection Observer 的草案, 可用于了解DOM元素（“目标”）相对于包含元素或顶级视口（“根”）的可见性和位置。
+    // 该位置是异步传递的，对于理解元素的可见性以及实现DOM内容的预加载和延迟加载很有用。
+    names = filterOut(names, ['IntersectionObserverEntry', 'IntersectionObserver'])
+
+    // https://wicg.github.io/input-device-capabilities/#dom-uievent-sourcecapabilities
+    // w3c 提出的有关 InputDeviceCapabilities 的草案，为作者提供了一种确定不同输入设备响应DOM输入事件的能力的方法
+    names = filterOut(names, ['InputDeviceCapabilities'])
+
+    // https://w3c.github.io/mediacapture-image/#imagecaptureapi
+    // w3c 提出的有关 MediaStream Image Capture 即 媒体流 图像 捕获 相关的草案
+    // 指定了产生照片图像捕获的方法和照相机设置。图像源是 MediaStreamTrack 或可以通过 MediaStreamTrack 引用
+    names = filterOut(names, ['ImageCapture'])
+
+    // https://www.w3.org/TR/requestidlecallback/
+    // w3c 关于 Cooperative Scheduling of Background Tasks 后台任务的协同调度 的PR 拟定建议标准
+    names = filterOut(names, ['requestIdleCallback', 'cancelIdleCallback', 'IdleDeadline'])
+
+    // https://www.w3.org/TR/IndexedDB/#idbversionchangeevent
+    // w3c 关于 IndexDB API 的事实推荐标准 REC
+    names = filterOut(names, ["IDBVersionChangeEvent", "IDBTransaction", "IDBRequest", "IDBOpenDBRequest", "IDBObjectStore", "IDBKeyRange", "IDBIndex", "IDBFactory", "IDBDatabase", "IDBCursorWithValue", "IDBCursor", 'indexedDB'])
+
+    // https://w3c.github.io/geolocation-api/#positionerror
+    // w3c 关于 Geolocation API 的规范 REC
+    // 此规范定义了一个API，该API提供对与宿主设备关联的地理位置信息的脚本访问
+    names = filterOut(names, ["GeolocationPositionError", "GeolocationPosition", "GeolocationCoordinates", "Geolocation"])
+
+    // https://w3c.github.io/gamepad/
+    // w3c 关于 Gampad 即游戏手柄 的WD 草案
+    names = filterOut(names, ["GamepadHapticActuator", "GamepadEvent", "GamepadButton", "Gamepad"])
+
+    // https://drafts.csswg.org/css-fonts-3/#cssfontfacerule
+    // csswg 关于 CSS Fonts Module Level 3 的规范
+    names = filterOut(names, ['CSSFontFaceRule'])
+
+    // https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadevent-fontfacesetloadevent
+    // csswg 关于 CSS Font Loading Module Level 3 即 字体加载的规范
+    names = filterOut(names, ['FontFaceSetLoadEvent', 'FontFace'])
+
+    // https://w3c.github.io/FileAPI/#dfn-filereader
+    // w3c 关于 File API 的规范
+    // 提供了一个API，用于在web应用程序中表示文件对象，以及以编程方式选择它们并访问它们的数据
+    names = filterOut(names, ['FileList', 'File', 'Blob', 'FileReader'])
+
+    // https://w3c.github.io/webappsec-permissions-policy/#feature-policy-http-header-field
+    // w3c 关于 权限策略 Permission Policy 的提案
+    names = filterOut(names, ['FeaturePolicy'])
+
+    // https://wicg.github.io/compression/
+    // w3c cg 关于 Compression Streams 压缩流的草案
+    names = filterOut(names, ['CompressionStream', 'DecompressionStream'])
+
+    // https://drafts.fxtf.org/geometry/#DOMRect
+    // w3c 关于 Geometry Interfaces Module Level 1 几何学模块的提案
+    // 描述了几个几何接口，用于表示尺寸为3x2和4x4的点，矩形，四边形和变换矩阵
+    names = filterOut(names, ["DOMRectReadOnly", "DOMRectList", "DOMRect", "DOMQuad", "DOMPointReadOnly", "DOMPoint", "DOMMatrixReadOnly", "DOMMatrix"])
+
+    // https://heycam.github.io/webidl/#idl-DOMException
+    // w3c 关于 WEB IDL 的提案
+    // 定义了一种接口定义语言Web IDL，可用于描述旨在在Web浏览器中实现的接口。 Web IDL是IDL变体，具有许多功能，这些功能允许更轻松地指定Web平台中常见脚本对象的行为。本文档还详细介绍了用Web IDL描述的接口如何与ECMAScript执行环境中的构造相对应。预期该文档将作为已发布规范的实现者的指南，并且新发布的规范将参考此文档，以确保接口的兼容实现可互操作。
+    // 在本提案中， DOMException 概念第一次出现
+    names = filterOut(names, ["DOMException"])
+
+    // DOM4 中废弃了 DOMError, 转为由DOMException 支持
+    names = filterOut(names, ['DOMError'])
+
+    // https://www.w3.org/TR/WebCryptoAPI/#introduction
+    // W3c 关于 Web Cryptography API 网页加密 API 的REC
+    names = filterOut(names, ['Crypto', 'crypto', 'CryptoKey', "SubtleCrypto"])
+
+    // https://w3c.github.io/clipboard-apis/#clipboarditem
+    // w3c 关于 Clipboard API and events 剪贴板 API 和事件 的提案
+    names = filterOut(names, ['ClipboardEvent', 'ClipboardItem', 'Clipboard'])
+
+    // https://w3c.github.io/mediacapture-fromelement/#the-canvascapturemediastreamtrack
+    // w3c 关于 Media Capture from DOM Elements 从DOM元素捕获媒体 的提案
+    // 定义了如何以MediaStream 的形式从DOM元素（例如视频，音频或画布元素）捕获媒体流。
+    names = filterOut(names, ['CanvasCaptureMediaStreamTrack'])
+
+    // https://w3c.github.io/media-source/#mediasource
+    // w3c 关于 Media Source 的提案
+    names = filterOut(names, ["MediaSource", "SourceBuffer", "SourceBufferList", "VideoPlaybackQuality"])
+
+    // https://drafts.csswg.org/css-conditional-3/#the-csssupportsrule-interface
+    // w3c 关于 CSS Conditional Rules Module Level 3 CSS条件规则 即@-rules规则的提案
+    names = filterOut(names, ['CSSConditionRule', 'CSSMediaRule', 'CSSSupportsRule'])
+
+    // https://drafts.csswg.org/css-animations/#intro
+    // css wg 提出的关于 CSS Animation的提案
+    names = filterOut(names, ['AnimationEvent', 'CSSRule', 'CSSKeyframeRule', 'CSSKeyframesRule', 'CSSAnimation', 'CSSTransition'])
+
+    // https://immersive-web.github.io/webxr/#xrinputsourceevent
+    // w3c 关于 拟真 的  WebXR Device API WebXR 设备 API 的提案
+    // 本规范描述了在网络上访问虚拟现实（VR）和增强现实（AR）设备（包括传感器和头戴式显示器）的支持。
+    names = filterOut(names, [
+        "XRHitTestResult",
+        'XRLayer',
+        'XRDOMOverlayState',
+        "XRHitTestSource",
+        "XRRay",
+        "XRTransientInputHitTestResult", "XRTransientInputHitTestSource", "XRBoundedReferenceSpace", "XRFrame", "XRInputSource", "XRInputSourceArray", "XRInputSourceEvent", "XRInputSourcesChangeEvent", "XRPose", "XRReferenceSpace", "XRReferenceSpaceEvent", "XRRenderState", "XRRigidTransform", "XRSession", "XRSessionEvent", "XRSpace", "XRSystem", "XRView", "XRViewerPose", "XRViewport", "XRWebGLLayer", "XRAnchor", "XRAnchorSet"])
+
+
+    // https://wicg.github.io/webusb/#usbalternateinterface
+    // W3c cg 关于 WebUSB API 的草案
+    // 介绍了一种API，用于安全地提供从网页对通用串行总线设备 USB 的访问
+    names = filterOut(names, ["USB", "USBAlternateInterface", "USBConfiguration", "USBConnectionEvent", "USBDevice", "USBEndpoint", , "USBInTransferResult", "USBInterface", "USBIsochronousInTransferPacket", "USBIsochronousInTransferResult", "USBIsochronousOutTransferPacket", "USBIsochronousOutTransferResult", "USBOutTransferResult"])
+
+    // https://w3c.github.io/battery/
+    // w3c 关于 获取系统电量相关的api
+    /**
+     * 用例
+     * navigator.getBattery().then(BatteryManager => {
+        console.log(BatteryManager.charging)
+    })
+     */
+    names = filterOut(names, ["BatteryManager"])
+
+    // https://wicg.github.io/visual-viewport/#the-visualviewport-interface
+    // w3c cg 对于 Visual Viewport 的API 的规范
+    // 即可见视口，为作者提供了一种确定可视视区属性并与之交互的方法
+    names = filterOut(names, ["VisualViewport", "visualViewport"])
+
+    // https://tc39.es/proposal-promise-any/#sec-aggregate-error-constructor
+    // tc39 关于Promise.any 的 规范
+    names = filterOut(names, ['AggregateError'])
+
+    // Chrome 的自家特性
+    names = filterOut(names, ["BeforeInstallPromptEvent", "offscreenBuffering", "defaultStatus", "defaultstatus", "styleMedia", "FragmentDirective"])
+    // 被弃用的特性
+    names = filterOut(names, ['captureEvents', 'releaseEvents'])
+
+    // https://w3c.github.io/webappsec-secure-contexts/
+    // w3c 关于 Secure Contexts 安全上下文的 草案
+    // 允许用户代理实现者和规范作者仅在满足某些最低标准的身份验证和机密性时才启用某些功能。
+    names = filterOut(names, ['isSecureContext'])
+
+    // https://webaudio.github.io/web-midi-api/#midiinput-interface
+    // webaudio组 关于 Web MIDI API 的规范
+    // 一些用户代理具有音乐设备，例如合成器，键盘和其他控制器，以及连接到其主机或设备的鼓机。
+    // 广泛使用的乐器数字接口（MIDI）协议使电子乐器，控制器和计算机能够相互通信和同步。
+    // MIDI不传输音频信号：相反，它发送有关音符的事件消息，音量，颤音和声像等参数的控制器信号，设置速度的提示和时钟信号以及系统特定的MIDI通信（例如，远程存储合成器）特定的补丁数据）。
+    // 相同的协议已成为非音乐用途的标准，例如表演控制，照明和特殊效果控制。
+    // 该规范定义了一个支持MIDI协议的API，使Web应用程序可以枚举和选择客户端系统上的MIDI输入和输出设备，以及发送和接收MIDI消息。
+    // 它旨在通过提供对用户系统上可用的MIDI设备的低级别访问来启用非音乐MIDI应用程序以及音乐应用程序
+    names = filterOut(names, ["MIDIAccess", "MIDIConnectionEvent", "MIDIInput", "MIDIInputMap", "MIDIMessageEvent", "MIDIOutput", "MIDIOutputMap", "MIDIPort", "MediaDeviceInfo", "MediaKeySession", "MediaKeys"])
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#characteristicproperties-interface
+    // 关于蓝牙相关的草案
+    names = filterOut(names, ["Bluetooth", "BluetoothCharacteristicProperties", "BluetoothDevice", "BluetoothRemoteGATTCharacteristic", "BluetoothRemoteGATTDescriptor", "BluetoothRemoteGATTServer", "BluetoothRemoteGATTService", "BluetoothUUID"])
+
+    // https://w3c.github.io/ServiceWorker/#cache-storage
+    // w3c 关于Service worker 的每日草案
+    names = filterOut(names, ["CacheStorage", "Cache", "caches", "ServiceWorker", "ServiceWorkerContainer", "ServiceWorkerRegistration", 'NavigationPreloadManager'])
+
+    // https://w3c.github.io/presentation-api/#interface-presentationavailability
+    // w3c 关于 Presentation API 的CR 候选推荐标准
+    // 此规范定义了一个API，使Web内容能够访问表示Presentation并使用它们来呈现Web内容
+    names = filterOut(names, ["Presentation", "PresentationAvailability", "PresentationConnection", "PresentationConnectionAvailableEvent", "PresentationConnectionCloseEvent", "PresentationConnectionList", "PresentationReceiver", "PresentationRequest"])
+
+    // https://storage.spec.whatwg.org/#storagemanager
+    // whatwg 关于 Storage 的 规范
+    names = filterOut(names, ["StorageManager"])
+
+    // https://w3c.github.io/payment-request/#paymentaddress-interface
+    // W3C 关于 支付 的草案
+    names = filterOut(names, ["PaymentAddress", "PaymentRequest", "PaymentResponse", "PaymentMethodChangeEvent", "PaymentRequestUpdateEvent", "PaymentInstruments", "PaymentManager"])
+
+    // https://wicg.github.io/entries-api/
+    // w3c cg 关于 File and Directory Entries API 的提案
+    // 说明了web浏览器对通过拖放操作上载文件和目录的支持
+    names = filterOut(names, ["FileSystem", "FileSystemDirectoryEntry", "FileSystemDirectoryReader", "FileSystemEntry", "FileSystemFileEntry"])
+
+    // https://tc39.es/proposal-weakrefs/#sec-finalization-registry-objects
+    // tc39 关于 WeakRefs 的提案
+    // WeakRef是一个对象，用于引用目标对象而不将其保留在垃圾回收中。
+    // 如果未通过垃圾回收回收目标对象，则WeakRefs可以取消引用以允许访问目标对象。
+    names = filterOut(names, ["FinalizationRegistry", "WeakRef"])
+
+    // WebAssembly
+    // https://webassembly.org/
+    names = filterOut(names, ['WebAssembly'])
+
+    // https://www.w3.org/TR/generic-sensor/
+    // w3c 关于 Generic Sensor API 的提案
+    // 本规范定义了一个框架，用于以一致的方式向开放式Web平台公开传感器数据。
+    // 它通过定义一个蓝图来编写具体传感器的规范，以及一个抽象的传感器接口来实现，该接口可以扩展以适应不同的传感器类型。
+    names = filterOut(names, ["AbsoluteOrientationSensor", "LinearAccelerationSensor", "RelativeOrientationSensor", "Sensor", "SensorErrorEvent", 'Accelerometer', 'Gyroscope', "OrientationSensor"])
+
+    // https://w3c.github.io/deviceorientation/#devicemotionevent
+    // w3c 关于 DeviceOrientation Event 设备定向事件 的提案
+    // 这个规范定义了几个新的DOM事件，这些事件提供了有关宿主设备的物理方向和运动的信息
+    names = filterOut(names, ["DeviceMotionEvent", "DeviceMotionEventAcceleration", "DeviceMotionEventRotationRate", "DeviceOrientationEvent"])
+
+    // https://w3c.github.io/webauthn/#iface-pkcredential
+    // w3c 关于 网页验证相关的 提案
+    names = filterOut(names, ['PublicKeyCredential', "AuthenticatorAssertionResponse", "AuthenticatorAttestationResponse", "AuthenticatorResponse"])
+
+    // https://w3c.github.io/webappsec-credential-management/
+    // w3c 关于 网页验证管理 相关的 提案
+    // 该规范描述了命令性API，该API使网站能够从用户代理请求用户的凭据，并帮助用户代理正确存储用户凭据以供将来使用。
+    names = filterOut(names, ["Credential", "CredentialsContainer", "FederatedCredential", "PasswordCredential"])
+
+    // https://w3c.github.io/mediasession/#dom-mediametadata-mediametadata
+    // w3c 关于 Media Session Standard 的规范
+    // 该规范使Web开发人员能够在平台UI上显示自定义的媒体元数据，自定义可用的平台媒体控件，并访问平台的媒体键，例如在键盘，耳机，遥控器上找到的硬件键，在通知区域和锁定屏幕上找到的软件键。移动设备。
+    names = filterOut(names, ["MediaMetadata", "MediaSession"])
+
+
+    // https://wicg.github.io/background-fetch/
+    // w3c cg 关于 Background Fetch 的提案
+    // 一个在用户可见的情况下在后台处理大型上载/下载的API。
+    names = filterOut(names, ["BackgroundFetchManager", "BackgroundFetchRecord", "BackgroundFetchRegistration"])
+
+    // https://w3c.github.io/screen-wake-lock/#dom-wakelock
+    // w3c 关于 Screen Wake Lock API 的提案
+    // 指定了一个API，该API允许Web应用程序请求屏幕唤醒锁定。在适当的条件下（如果允许），屏幕唤醒锁定可防止系统关闭设备的屏幕。
+    names = filterOut(names, ['WakeLock', 'WakeLockSentinel'])
+
+    // https://wicg.github.io/web-locks/#api-lock-manager
+    // w3c cg 关于 Web Locks API 的提案 即资源锁
+    // 定义了一个Web平台API，该API允许脚本异步获取对资源的锁定，在执行工作时将其保留，然后释放它。
+    // 保留后，原始服务器中的其他任何脚本都无法获得对同一资源的锁定。这允许Web应用程序中的上下文（窗口，工作程序）协调资源的使用。
+    names = filterOut(names, ['Lock', 'LockManager'])
+
+    // https://wicg.github.io/keyboard-map/#keyboardlayoutmap-interface
+    // w3c cg 关于 Keyboard Map 的提案
+    // 该规范定义了一个API，该API允许网站将给定的代码值转换为可显示给用户的有效键值，以识别给定的键。从代码到键的转换基于用户当前选择的键盘布局。它打算由希望将键盘视为一组按钮并需要向用户描述这些按钮的Web应用程序使用。
+    names = filterOut(names, ["Keyboard", "KeyboardLayoutMap"])
+
+    // https://w3c.github.io/push-api/#introduction
+    // w3c 对于 PUSH API 的提案
+    // Push API允许通过推送服务将推送消息发送到Web应用程序。即使Web应用程序或用户代理处于非活动状态，应用程序服务器也可以随时发送推送消息。推送服务可确保可靠，高效地交付给用户代理。推送消息将传递给在Web应用程序源中运行的Service Worker，后者可以使用消息中的信息更新本地状态或向用户显示通知。
+    // 该规范旨在与Web推送协议一起使用，该协议描述了应用程序服务器或用户代理如何与推送服务进行交互。
+    names = filterOut(names, ["PushManager", "PushSubscription", "PushSubscriptionOptions"])
+
+    // https://wicg.github.io/periodic-background-sync/#periodicsyncmanager-interface
+    // w3c cg 关于 Web Periodic Background Synchronization Web周期性后台同步 的提案
+    // 此规范描述了一种方法，使web应用程序能够在后台定期同步数据和内容。
+    names = filterOut(names, ["PeriodicSyncManager"])
+
+    // https://wicg.github.io/speech-api/#speechsynthesiserrorevent
+    // w3c cg 关于 Web Speech API 即 网络语音 API 的提案
+    // 该规范定义了一个JavaScript API，使Web开发人员可以将语音识别和合成功能集成到他们的Web页面中。
+    // 它使开发人员可以使用脚本生成文本到语音的输出，并将语音识别用作表单，连续听写和控制的输入。
+    // JavaScript API允许网页控制激活和计时以及处理结果和替代方法。
+    names = filterOut(names, ["speechSynthesis", "SpeechSynthesisErrorEvent", "SpeechSynthesisEvent", "SpeechSynthesisUtterance"])
+
+    // https://wicg.github.io/shape-detection-api/#barcodedetector
+    // w3c cg 关于 Accelerated Shape Detection in Images 图像中的加速形状检测 的提案
+    // 本文档描述了一套Chrome中针对静态和/或动态图像的图形识别（如：人脸识别）API。
+    names = filterOut(names, ["BarcodeDetector"])
+
+    // https://wicg.github.io/file-system-access/#api-filesystemhandle
+    // w3c cg 关于 File System Access 的提案 （感觉有点危险啊，直接访问硬盘
+    // 本文档定义了一个web平台API，使开发人员能够构建功能强大的web应用程序，与用户本地设备上的文件进行交互。它构建在文件API上以实现文件读取功能，并添加新的API表面以支持修改文件以及处理目录
+    names = filterOut(names, ["FileSystemDirectoryHandle", "FileSystemFileHandle", "FileSystemHandle", "FileSystemWritableFileStream", "showDirectoryPicker", "showOpenFilePicker", "showSaveFilePicker"])
+
+    // https://w3c.github.io/webappsec-trusted-types/dist/spec/
+    // w3c 关于 Trusted Types 的 提案
+    // 一种API，允许应用程序锁定功能强大的API，使其只接受非伪造的类型化值，而不是字符串，以防止将这些API与攻击者控制的输入一起使用所造成的漏洞。
+    names = filterOut(names, ["trustedTypes", "TrustedHTML", "TrustedScript", "TrustedScriptURL", "TrustedTypePolicy", "TrustedTypePolicyFactory"])
+
+
+    // https://notifications.spec.whatwg.org/
+    // WHATWG 关于 Notification API 的规范
+    // 该标准定义了一个API，用于向最终用户显示通知，通常在顶级浏览上下文的视口之外。它旨在与现有的通知系统兼容，同时保持与平台无关
+    names = filterOut(names, ["Notification"])
+
+    // 画中画
+    names = filterOut(names, ["PictureInPictureEvent", "PictureInPictureWindow"])
+
+    // https://www.w3.org/TR/remote-playback/
+    // w3c 关于 Remote Playback API 的规范
+    // 此规范定义了一个扩展HTMLMediaElement的API，该API允许从web页面控制媒体的远程播放。
+    names = filterOut(names, ["RemotePlayback"])
+
+
+    // https://w3c.github.io/permissions/#status-of-a-permission
+    // w3c 关于 Permission API 的规范
+    // 权限标准为需要与浏览器权限进行交互的其他规范定义了通用基础结构。它还定义了一个API，以允许Web应用程序查询和请求对给定权限状态的更改
+    names = filterOut(names, ["PermissionStatus", "Permissions"])
+
+    // web SQL database
+    names = filterOut(names, ["openDatabase"])
+
+    // 非标准
+    names = filterOut(names, ['XSLTProcessor'])
+
+    // 其他的就是插件/代码注入的全局变量了
+    console.log(names);
+
+
+</script>
