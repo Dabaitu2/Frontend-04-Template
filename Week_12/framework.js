@@ -1,6 +1,5 @@
 import { flatten } from './utils';
 import { diff, patch } from './vDom';
-import { setProps } from './dom';
 
 // 增加虚拟Props
 function setVProps(target, props) {
@@ -26,9 +25,8 @@ export class Component {
     setVProps(this, props);
   }
 
-  genRenderDom() {
+  getRoot() {
     this.root = this.render();
-    this.dom = this.root.dom;
   }
 
   setAttribute(name, value) {
@@ -36,11 +34,7 @@ export class Component {
   }
 
   getVDom() {
-    return {
-      type: this.type,
-      props: this.props,
-      children: flatten([this.root.getVDom()]),
-    };
+    return this.root.getVDom();
   }
 
   setState(newState) {
@@ -54,22 +48,20 @@ export class Component {
     this.update(prevVdom);
   }
 
-  update(prev) {
-    this.genRenderDom();
-    let patches = diff(this.getVDom(), prev);
-    console.log(this.dom);
-    // patch(this.dom, patches);
+  update(prevVdom) {
+    this.getRoot();
+    let patches = diff(this.getVDom(), prevVdom);
+    patch(this.parent, patches);
   }
 
   appendChild(child) {
     this.children.push(child);
-    child.mountTo(this.dom);
   }
 
-  // mountTo 被调用时应该是首次渲染，其他时候都跟他没关系
-  // 不然关于dom的操作就应该被patch调用
   mountTo(parent) {
-    parent.appendChild(this.dom);
+    this.parent = parent;
+    let patches = diff(this.getVDom(), null);
+    patch(parent, patches);
   }
 
   merge(oldState, newState) {
@@ -86,6 +78,10 @@ export class Component {
 }
 
 class ElementWrapper extends Component {
+  constructor(props) {
+    super(props);
+  }
+
   getVDom() {
     return {
       type: this.type,
@@ -94,15 +90,8 @@ class ElementWrapper extends Component {
     };
   }
 
-  genRenderDom() {
-    super.genRenderDom();
-    setProps(this.dom, this.props);
-  }
-
   render() {
-    return {
-      dom: document.createElement(this.type),
-    }
+    return this;
   }
 }
 
@@ -120,9 +109,7 @@ class TextWrapper extends Component {
   }
 
   render() {
-    return {
-      dom: document.createTextNode(this.content),
-    };
+    return this;
   }
 }
 
@@ -133,8 +120,8 @@ export function createElement(type, props, ...children) {
   } else {
     element = new type({ __type: type, ...props });
   }
-  element.genRenderDom();
   insertChildren(element, children);
+  element.getRoot();
   return element;
 }
 
@@ -142,7 +129,7 @@ function insertChildren(el, children) {
   for (let child of children) {
     if (typeof child === 'string' || typeof child === 'number') {
       child = new TextWrapper(child);
-      child.genRenderDom();
+      child.getRoot();
     }
     if (child === null) {
       continue;

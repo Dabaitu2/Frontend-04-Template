@@ -13,22 +13,24 @@ class Carousel extends Component {
     super(props);
     this.state = {
       a: 1,
+      length: 4,
     };
+    this.clickHandler = this.clickHandler.bind(this);
+  }
+  clickHandler() {
+    this.setState({
+      a: this.state.a + 1,
+      length: this.state.length > 0 ? this.state.length - 1 : 0,
+    });
   }
   render() {
     let src = this.props.src.map(s => ({
       backgroundImage: `url('${s}')`,
     }));
     return (
-      <div className={'carousel'} onClick={() => {
-        this.setState({
-          a: this.state.a + 1,
-        });
-      }}>
-        {src.map(s => (
-          <div
-            style={`background-image: ${s.backgroundImage};`}
-          />
+      <div className={'carousel'} onClick={this.clickHandler}>
+        {src.slice(0, this.state.length).map(s => (
+          <div style={`background-image: ${s.backgroundImage};`} />
         ))}
         <span>{this.state.a}</span>
         <div>{this.children}</div>

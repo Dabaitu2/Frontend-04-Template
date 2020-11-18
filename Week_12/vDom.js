@@ -93,7 +93,6 @@ function diffChildren(newNode, oldNode) {
   return patches.filter(p => !!p);
 }
 
-
 /**
  * 根据补丁集合进行更新
  * 首先当patches不存在时，直接return，不进行任何操作
@@ -112,33 +111,30 @@ function diffChildren(newNode, oldNode) {
  */
 export function patch(parent, patches, index = 0) {
   if (!patches) {
-    return
+    return;
   }
   const el = parent.childNodes[index];
-  if (!el) {
-    return
-  }
   switch (patches.type) {
     case CREATE: {
       const { newNode } = patches;
       const newEl = createElement(newNode);
       parent.appendChild(newEl);
-      break
+      break;
     }
     case REMOVE: {
       parent.removeChild(el);
       break;
     }
     case REPLACE: {
-      const {newNode} = patches;
+      const { newNode } = patches;
       const newEl = createElement(newNode);
       return parent.replaceChild(newEl, el);
     }
     case UPDATE: {
-      const {props, children} = patches;
+      const { props, children } = patches;
       patchProps(el, props);
-      for(let i = 0; i < children.length; i++) {
-        patch(el, children[i], i)
+      for (let i = 0; i < children.length; i++) {
+        patch(el, children[i], i);
       }
     }
   }
@@ -151,14 +147,14 @@ export function patch(parent, patches, index = 0) {
  */
 function patchProps(parent, patches) {
   patches.forEach(patch => {
-    const { type, key, value } = patch
+    const { type, key, value } = patch;
     if (type === 'SET_PROP') {
-      setProp(parent, key, value)
+      setProp(parent, key, value);
     }
     if (type === 'REMOVE_PROP') {
-      removeProp(parent, key, value)
+      removeProp(parent, key, value);
     }
-  })
+  });
 }
 
 /**
@@ -167,12 +163,16 @@ function patchProps(parent, patches) {
  * @param name
  * @param value
  */
-function removeProp(target, name, value) { //@
+function removeProp(target, name, value) {
+  //@
   if (name === 'className') {
-    return target.removeAttribute('class')
+    return target.removeAttribute('class');
   }
-
-  target.removeAttribute(name)
+  if (name.match(/^on([\s\S]+)$/)) {
+    let event = RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase());
+    return target.removeEventListener(event, value);
+  }
+  target.removeAttribute(name);
 }
 
 /**
@@ -182,12 +182,12 @@ function removeProp(target, name, value) { //@
  */
 function createElement(node) {
   // 文本节点直接创建文本返回
-  if (typeof (node) === 'string') {
-    return document.createTextNode(node)
+  if (node.type === '#text') {
+    return document.createTextNode(node.content);
   }
 
   // 否则就解析该节点的类型, 属性和children
-  let {type, props, children} = node;
+  let { type, props, children } = node;
   // 创建该类型的元素
   const el = document.createElement(type);
   // 挂载属性
@@ -195,8 +195,7 @@ function createElement(node) {
   // 对children递归进行创建，并挂载到当前节点上
   // 这里bind一下，是因为el.appendChild 其本质上不是el在调用appendChild
   // 而是获取了这个方法，而这个方法执行时的this，不指定的话是全局
-  children.map(createElement)
-    .forEach(el.appendChild.bind(el));
+  children.map(createElement).forEach(el.appendChild.bind(el));
 
   // 返回当前节点
   return el;
@@ -206,17 +205,24 @@ function createElement(node) {
 function setProp(target, name, value) {
   // 将防止冲突的className重新设置为class属性
   if (name === 'className') {
-    return target.setAttribute('class', value)
+    return target.setAttribute('class', value);
+  }
+  if (name.match(/^on([\s\S]+)$/)) {
+    let event = RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase());
+    return target.addEventListener(
+      event,
+      value
+    );
   }
 
   // 其他属性正常设置即可
-  target.setAttribute(name, value)
+  target.setAttribute(name, value);
 }
 
 // 挂载属性列表
 function setProps(target, props) {
   // 对各个属性依次挂载
   Object.keys(props).forEach(key => {
-    setProp(target, key, props[key])
-  })
+    setProp(target, key, props[key]);
+  });
 }
