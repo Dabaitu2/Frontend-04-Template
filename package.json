@@ -17,7 +17,18 @@
   },
   "homepage": "https://github.com/Dabaitu2/Frontend-04-Template#readme",
   "dependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
     "css": "^3.0.0",
-    "images": "^3.2.3"
+    "images": "^3.2.3",
+    "prettier": "^2.1.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.3",
+    "@babel/plugin-transform-react-jsx": "^7.12.5",
+    "@babel/preset-env": "^7.12.1",
+    "babel-loader": "^8.2.0",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^4.2.0",
+    "webpack-dev-server": "^3.11.0"
   }
 }
