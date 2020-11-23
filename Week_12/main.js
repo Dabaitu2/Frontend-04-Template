@@ -1,5 +1,4 @@
-import { Component, createElement } from './framework';
-import { RENDER_TO_DOM } from './dom';
+import MiniReact, { RENDER_TO_DOM } from './index';
 
 const d = [
   'https://images.unsplash.com/photo-1602836831227-0eff587abd57?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixlib=rb-1.2.1&q=80&w=800',
@@ -8,40 +7,216 @@ const d = [
   'https://images.unsplash.com/photo-1604630720374-9ad1b6dd01e3?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixlib=rb-1.2.1&q=80&w=800',
 ];
 
-class Carousel extends Component {
+// 指的是图像的移动方向。比如 1->2 实际上是整体backward
+const Direction = {
+  forward: 1,
+  backward: -1,
+};
+
+// class 组件就是正常wrapper之一，本身就是构造函数，会生成属于这个class的实例
+class Carousel extends MiniReact.Component {
   constructor(props) {
     super(props);
+    this.timer = null;
     this.state = {
-      a: 1,
-      length: 4,
+      currentIndex: 0,
+      nextIndex: 1,
+      lastIndex: this.props.src.length - 1,
+      startX: -1,
+      moveX: 0,
+      isActive: false,
+      autoPlay: this.props.autoPlay,
+      direction: Direction.backward
     };
-    this.clickHandler = this.clickHandler.bind(this);
   }
-  clickHandler() {
+
+  componentDidUpdate(prevProps, prevState) {
+    if (!prevState.autoPlay && !!this.state.autoPlay) {
+      this.autoPlay();
+    }
+  }
+
+  componentDidMount() {
+    if (this.state.autoPlay) {
+      console.log('[Carousel] AutoPlay: %c ON', 'color: green;');
+      this.autoPlay();
+    } else {
+      console.log('[Carousel] AutoPlay:%c OFF', 'color: red;');
+    }
+  }
+
+  autoPlay = () => {
+    const length = this.props.src.length;
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
+    this.timer = setTimeout(() => {
+      if (this.state.autoPlay) {
+        this.setState({
+          direction: Direction.backward,
+          lastIndex: this.state.currentIndex,
+          currentIndex: this.state.nextIndex,
+          nextIndex: (this.state.nextIndex + 1) % length,
+        });
+        this.autoPlay();
+      }
+    }, 3000);
+  };
+
+  down = event => {
+    document.addEventListener('mousemove', this.move);
+    document.addEventListener('mouseup', this.up);
     this.setState({
-      a: this.state.a + 1,
-      length: this.state.length > 0 ? this.state.length - 1 : 0,
+      startX: event.clientX,
+      isActive: true,
+      autoPlay: false,
     });
-  }
+  };
+
+  move = event => {
+    this.setState({
+      moveX: Math.max(Math.min(event.clientX - this.state.startX, 400), -400),
+    });
+  };
+
+  up = () => {
+    const length = this.props.src.length;
+    document.removeEventListener('mousemove', this.move);
+    document.removeEventListener('mouseup', this.up);
+    this.setState({
+      startX: -1,
+      moveX: 0,
+      isActive: false,
+      autoPlay: this.props.autoPlay,
+      direction:
+        this.state.moveX <= -150
+          ? Direction.backward
+          : this.state.moveX <= 0
+          ? Direction.forward
+          : this.state.moveX <= 150
+          ? Direction.backward
+          : Direction.forward,
+      lastIndex:
+        this.state.moveX < -150
+          ? this.state.currentIndex
+          : this.state.moveX > 150
+          ? (this.state.lastIndex - 1 + length) % length
+          : this.state.lastIndex,
+      currentIndex:
+        this.state.moveX < -150
+          ? this.state.nextIndex
+          : this.state.moveX > 150
+          ? (this.state.currentIndex - 1 + length) % length
+          : this.state.currentIndex,
+      nextIndex:
+        this.state.moveX < -150
+          ? (this.state.nextIndex + 1) % length
+          : this.state.moveX > 150
+          ? (this.state.nextIndex - 1 + length) % length
+          : this.state.nextIndex,
+    });
+  };
+
+  calculateStyle = index => {
+    return !this.state.isActive
+      ? this.calculateAutoStyle(index)
+      : this.calculateManualStyle(index);
+  };
+
+  calculateManualStyle = index => {
+    if (this.state.currentIndex === 0) {
+      if (index === this.state.lastIndex) {
+        return `
+            transform: translateX(-${index * 400 + 400 - this.state.moveX}px);
+          `;
+      }
+    } else if (this.state.currentIndex === this.props.src.length - 1) {
+      if (index === this.state.nextIndex) {
+        return `
+            transform: translateX(${400 + this.state.moveX}px);
+          `;
+      }
+    }
+    return `
+      transform: translateX(${
+        -this.state.currentIndex * 400 + this.state.moveX
+      }px);
+    `;
+  };
+
+  calculateAutoStyle = index => {
+    return `
+        position: relative;
+        transition: ${this.calculateAutoTransition(index)};
+        transform: translateX(${-this.calculateAutoTranslate(index)}%);
+        z-index: ${this.calculateAutoZIndex(index)};
+    `;
+  };
+
+  calculateAutoTranslate = index => {
+    if (index === this.state.currentIndex) {
+      return index * 100;
+    } else if (index === this.state.nextIndex) {
+      return index * 100 - 100;
+    } else if (index === this.state.lastIndex) {
+      return index * 100 + 100;
+    } else {
+      return this.state.currentIndex * 100;
+    }
+  };
+
+  calculateAutoTransition = index => {
+    if (index === this.state.currentIndex) {
+      return '.5s ease';
+    } else {
+      if (this.state.direction === Direction.forward) {
+        if (index === this.state.nextIndex) {
+          return '.5s ease';
+        }
+      } else if (this.state.direction === Direction.backward) {
+        if (index === this.state.lastIndex) {
+          return '.5s ease';
+        }
+      }
+      return '0';
+    }
+  };
+
+  calculateAutoZIndex = index => {
+    if (index === this.state.currentIndex) {
+      return 2;
+    } else if (index === this.state.nextIndex) {
+      return 1;
+    } else {
+      return -1;
+    }
+  };
+
+  // 对于真实的react, onmousedown实际上是 onMouseDown， 换了个名字是因为所有的事件都是synthetic event
+  // 即合成事件，也就是所有的事件都交由 document 来处理了
   render() {
     let src = this.props.src.map(s => ({
       backgroundImage: `url('${s}')`,
     }));
     return (
-      <div className={'carousel'} onClick={this.clickHandler}>
-        {src.slice(0, this.state.length).map(s => (
-          <div style={`background-image: ${s.backgroundImage};`} />
-        ))}
-        <span>{this.state.a}</span>
-        <div>{this.children}</div>
+      <div>
+        <div className={'carousel'} onMouseDown={this.down}>
+          {src.map((s, index) => (
+            <div
+              style={
+                `background-image: ${s.backgroundImage};` +
+                this.calculateStyle(index)
+              }
+            />
+          ))}
+        </div>
+        <span>{this.state.moveX}</span>
       </div>
     );
   }
 }
 
 RENDER_TO_DOM(
-  <Carousel src={d}>
-    <span>hello</span>
-  </Carousel>,
+  <Carousel src={d} autoPlay={true} />,
   document.getElementById('app')
 );

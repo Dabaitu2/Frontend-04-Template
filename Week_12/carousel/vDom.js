@@ -1,5 +1,3 @@
-import { removeEvent, addEvent } from './syntheticEvent';
-
 const CREATE = 'CREATE'; //新增一个节点
 const REMOVE = 'REMOVE'; //删除原节点
 const REPLACE = 'REPLACE'; //替换原节点
@@ -92,7 +90,7 @@ function diffChildren(newNode, oldNode) {
     patches[i] = diff(newNode.children[i], oldNode.children[i]);
   }
 
-  return patches;
+  return patches.filter(p => !!p);
 }
 
 /**
@@ -172,8 +170,7 @@ function removeProp(target, name, value) {
   }
   if (name.match(/^on([\s\S]+)$/)) {
     let event = RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase());
-    // return target.removeEventListener(event, value);
-    return removeEvent(target, event);
+    return target.removeEventListener(event, value);
   }
   target.removeAttribute(name);
 }
@@ -212,40 +209,12 @@ function setProp(target, name, value) {
   }
   if (name.match(/^on([\s\S]+)$/)) {
     let event = RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase());
-    // return target.addEventListener(
-    //   event,
-    //   value
-    // );
-    // 这里一定要return，有个非常坑爹的地方
-    // https://developer.mozilla.org/zh-CN/docs/Web/API/Element/setAttribute
-    // https://javascript.info/introduction-browser-events
-    // 我们要注意，给dom元素直接设置事件处理器"并不是"把时间挂在了attribute属性上
-    // dom.xxx !== dom.getAttribute(xxx)
-    // 此外， setAttribute 还会把一切非 string 的 value string化
-    // 如果你传个函数过去，attribute的值就会变成字符串
-    // 【但是】，dom内部会检查 attribute 的key是不是和事件同名，
-    // 如果是，就会尝试给dom元素绑定事件，我们setAttribute 时
-    // 如果传一个 js原生函数，就会被塞到一个和事件同名的函数里，比如
-    // temp1.setAttribute('onmousedown', ()=>{console.log(123)}) ==>
-    // temp1.onmousedown = function onmousedown() {
-    //    () => {console.log(123)}
-    // }
-    // 另一个例子:
-    // <div onclick="alert('yes!')">Click Me!</div>
-    //
-    // 对于其他value类型，或者如果这个函数被浏览器包装过，不是js原生函数（如bind),
-    // 则不会触发这个流程。temp1.onmousedown 会始终 为 null
-    // 如果想要函数能够被正常的执行，且使用setAttribute
-    // 需要这样：
-    // temp1.setAttribute('onmousedown', 'console.log(123)') ==>
-    // temp1.onmousedown = function onmousedown() {
-    //    console.log(123)
-    // }
-    // 所以最好事件处理还是直接绑到dom元素上而不是setAttribute来处理
-    // 这还有个问题，真正的合成事件应该是会记录下所有真实的dom事件名，命中了再设置为event的
-    // 否则类似于onSearch这种自定义函数也会被错误的去尝试添加错误处理
-    return addEvent(target, event, value);
+    return target.addEventListener(
+      event,
+      value
+    );
   }
+
   // 其他属性正常设置即可
   target.setAttribute(name, value);
 }

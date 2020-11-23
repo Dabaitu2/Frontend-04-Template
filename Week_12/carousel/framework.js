@@ -5,7 +5,7 @@ import { diff, patch } from './vDom';
 function setVProps(target, props) {
   if (!!props) {
     for (let p in props) {
-      if (p !== '__type' && props.hasOwnProperty(p)) {
+      if (p !== '__type') {
         target.setAttribute(p, props[p]);
       }
     }
@@ -13,6 +13,8 @@ function setVProps(target, props) {
 }
 
 /**
+ * root 实际的dom元素, 不应该随便被替换
+ * vDom 虚拟dom树，想换就换
  */
 export class Component {
   constructor(props) {
@@ -22,9 +24,6 @@ export class Component {
     this.children = [];
     setVProps(this, props);
   }
-
-  componentDidMount() {}
-  componentDidUpdate() {}
 
   getRoot() {
     this.root = this.render();
@@ -40,21 +39,19 @@ export class Component {
 
   setState(newState) {
     let prevVdom = this.getVDom();
-    let prevState = Object.assign({}, this.state);
     if (this.state === null || typeof this.state !== 'object') {
       this.state = newState;
-      this.update(prevState, prevVdom);
+      this.update(prevVdom);
       return;
     }
     this.merge(this.state, newState);
-    this.update(prevState, prevVdom);
+    this.update(prevVdom);
   }
 
-  update(prevState, prevVdom) {
+  update(prevVdom) {
     this.getRoot();
     let patches = diff(this.getVDom(), prevVdom);
     patch(this.parent, patches);
-    this.componentDidUpdate(prevVdom.props, prevState);
   }
 
   appendChild(child) {
@@ -65,7 +62,6 @@ export class Component {
     this.parent = parent;
     let patches = diff(this.getVDom(), null);
     patch(parent, patches);
-    this.componentDidMount();
   }
 
   merge(oldState, newState) {
